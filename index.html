@@ -4,10 +4,14 @@
     <meta charset="UTF-8" />
     <title>Astedroids</title>
     <style>
+      @font-face {
+        font-family: "Harlow Solid";
+        src: url("fonts/HARLOWSI.TTF") format("truetype");
+      }
       h1 {
         font-size: 4em;
         margin: 0px;
-        font-family: Harlow Solid, sans-serif;
+        font-family: "Harlow Solid", sans-serif;
         color: lightgray;
         text-align: center;
       }
@@ -43,6 +47,8 @@
         requestAnimationFrame(draw);
       }
       img.onload = draw;
+      const bossMusic = new Audio("kule_lyder.mp3");
+      bossMusic.loop = true;
 
       const canvas = document.getElementById("game");
       const ctx = canvas.getContext("2d");
@@ -51,12 +57,15 @@
       const keys = {};
       let canShoot = true;
       let score = 0;
-      let lives = 3;
+      let lives = 5;
       let level = 1;
       let showLevelScreen = false;
       let levelScreenTimer = 0;
       let spawnTime = Date.now();
       let gameOver = false;
+      let bossLevel = 5;
+      let boss = null;
+      const bossBullets = [];
 
       const friction = 0.98;
       const rotationSpeed = 0.05;
@@ -116,7 +125,7 @@
       function shootBullet() {
         const baseAngle = ship.angle - Math.PI / 2;
         const shot = laserSound.cloneNode();
-        shot.volume = 0.4;
+        shot.volume = 0.2;
         shot.play();
 
         if (level === 1 || level === 2) {
@@ -174,6 +183,25 @@
         }
       }
 
+      function bossShoot() {
+        if (!boss) return;
+
+        const dx = ship.x - boss.x;
+        const dy = ship.y - boss.y;
+        let angle = Math.atan2(dy, dx);
+
+        angle += Math.random() * 0.2 - 0.1;
+
+        const speed = 2;
+        bossBullets.push({
+          x: boss.x,
+          y: boss.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 5,
+        });
+      }
+
       function isInvincible() {
         return Date.now() - spawnTime < 2000;
       }
@@ -204,19 +232,38 @@
         }
       }
 
+      let bossSpawned = false;
+
       function nextLevel() {
         level++;
-        spawnAsteroids(3 + 2 * (level - 1));
-        showLevelScreen = true;
-        levelScreenTimer = 120;
+
+        if (level === bossLevel && !bossSpawned) {
+          showLevelScreen = true;
+          levelScreenTimer = 120;
+          spawnBoss();
+          bossSpawned = true;
+        } else {
+          spawnAsteroids(3 + 2 * (level - 1));
+          showLevelScreen = true;
+          levelScreenTimer = 120;
+        }
       }
 
       function resetShip() {
-        ship.x = canvas.width / 2;
-        ship.y = canvas.height / 2;
-        ship.vx = 0;
-        ship.vy = 0;
-        spawnTime = Date.now();
+        if (level === bossLevel) {
+          ship.x = canvas.width / 4;
+          ship.y = canvas.height / 4;
+          ship.vx = 0;
+          ship.vy = 0;
+          boss.x = canvas.width / 1.5;
+          boss.y = canvas.height / 1.5;
+        } else {
+          ship.x = canvas.width / 2;
+          ship.y = canvas.height / 2;
+          ship.vx = 0;
+          ship.vy = 0;
+          spawnTime = Date.now();
+        }
       }
 
       function generateRockShape() {
@@ -264,6 +311,7 @@
           if (!ship.thrusting) {
             thrustSound.currentTime = 0;
             thrustSound.play();
+            thrustSound.volume = 0.5;
             ship.thrusting = true;
           }
           ship.vx += Math.cos(ship.angle - Math.PI / 2) * thrustPower;
@@ -305,6 +353,18 @@
         }
       }
 
+      function updateBossBullets() {
+        for (let i = bossBullets.length - 1; i >= 0; i--) {
+          const b = bossBullets[i];
+          b.x += b.vx;
+          b.y += b.vy;
+
+          if (b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+            bossBullets.splice(i, 1);
+          }
+        }
+      }
+
       function updateAsteroids() {
         asteroids.forEach((a) => {
           a.x += a.vx;
@@ -323,6 +383,76 @@
           const dx = ship.x - a.x;
           const dy = ship.y - a.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (boss) {
+            const dxBoss = ship.x - boss.x;
+            const dyBoss = ship.y - boss.y;
+
+            if (
+              Math.abs(dxBoss) < boss.radiusX + ship.radius &&
+              Math.abs(dyBoss) < boss.radiusY + ship.radius
+            ) {
+              if (!isInvincible()) {
+                lives--;
+                if (lives < 0) {
+                  gameOver = true;
+                  bossMusic.pause();
+                  const retry = confirm(
+                    "Game Over! Your score: " + score + "\nTry again?"
+                  );
+                  if (retry) location.reload();
+                  return;
+                } else {
+                  resetShip();
+                }
+              }
+            }
+
+            for (let j = bullets.length - 1; j >= 0; j--) {
+              const b = bullets[j];
+              const dxB = b.x - boss.x;
+              const dyB = b.y - boss.y;
+
+              const normX = dxB / boss.radiusX;
+              const normY = dyB / boss.radiusY;
+              if (normX * normX + normY * normY <= 1) {
+                boss.hp--;
+                bullets.splice(j, 1);
+
+                if (boss && boss.hp <= 0) {
+                  score += 5000;
+                  boss = null;
+                  bossBullets.length = 0;
+                  bossMusic.pause();
+                  alert("Boss defeated! You win!");
+                }
+              }
+            }
+
+            for (let i = bossBullets.length - 1; i >= 0; i--) {
+              const b = bossBullets[i];
+              const dxB = b.x - ship.x;
+              const dyB = b.y - ship.y;
+              const dist = Math.sqrt(dxB * dxB + dyB * dyB);
+              if (dist < b.radius + ship.radius) {
+                if (!isInvincible()) {
+                  lives--;
+                  bossBullets.splice(i, 1);
+                  if (lives < 0) {
+                    gameOver = true;
+                    bossMusic.pause();
+                    const retry = confirm(
+                      "Game Over! Your score: " + score + "\nTry again?"
+                    );
+                    if (retry) location.reload();
+                    return;
+                  } else {
+                    resetShip();
+                  }
+                }
+              }
+            }
+          }
 
           if (!isInvincible() && dist < ship.radius + a.size) {
             lives--;
@@ -361,6 +491,23 @@
           if (explosions[i].radius > explosions[i].max) {
             explosions.splice(i, 1);
           }
+        }
+      }
+
+      function updateBoss() {
+        if (!boss) return;
+
+        boss.x += boss.vx;
+        boss.y += boss.vy;
+
+        if (boss.x > canvas.width - boss.radiusX || boss.x < canvas.width / 2)
+          boss.vx *= -1;
+        if (boss.y > canvas.height / 2 || boss.y < 50) boss.vy *= -1;
+
+        boss.shootCooldown--;
+        if (boss.shootCooldown <= 0) {
+          bossShoot();
+          boss.shootCooldown = 90;
         }
       }
 
@@ -444,6 +591,15 @@
         });
       }
 
+      function drawBossBullets() {
+        ctx.fillStyle = "white";
+        bossBullets.forEach((b) => {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
       function drawExplosions() {
         explosions.forEach((e) => {
           ctx.beginPath();
@@ -468,6 +624,57 @@
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       }
 
+      function spawnBoss() {
+        boss = {
+          x: canvas.width - 150,
+          y: 150,
+          radiusX: 60,
+          radiusY: 40,
+          hp: 100,
+          vx: 1.5,
+          vy: 1,
+          shootCooldown: 0,
+        };
+        bossMusic.play();
+      }
+
+      function drawBoss() {
+        if (!boss) return;
+
+        ctx.save();
+        ctx.translate(boss.x, boss.y);
+        ctx.fillStyle = "white";
+
+        // Draw oval body
+        ctx.beginPath();
+        ctx.ellipse(0, 0, boss.radiusX, boss.radiusY, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Draw 4 tentacles
+        for (let i = 0; i < 4; i++) {
+          const angle = (Math.PI / 2) * i;
+          const x = Math.cos(angle) * boss.radiusX;
+          const y = Math.sin(angle) * boss.radiusY;
+          ctx.beginPath();
+          ctx.ellipse(x, y, 15, 5, angle, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      function drawBossHP() {
+        if (!boss) return;
+        ctx.fillStyle = "lightgray";
+        ctx.font = "18px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          `Boss HP: ${boss.hp}`,
+          canvas.width / 2,
+          canvas.height - 20
+        );
+      }
+
       // ==== MAIN LOOP ====
       function gameLoop() {
         if (gameOver) return;
@@ -477,7 +684,7 @@
           ctx.fillStyle = "#111";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = "lightgray";
-          ctx.font = "40px Harlow Solid, sans-serif";
+          ctx.font = '40px "Harlow Solid", sans-serif';
           ctx.textAlign = "center";
           ctx.fillText(
             "Press any key to start",
@@ -491,7 +698,7 @@
           ctx.fillStyle = "#111";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = "lightgray";
-          ctx.font = "40px Harlow Solid, sans-serif";
+          ctx.font = '40px "Harlow Solid", sans-serif';
           ctx.textAlign = "center";
           ctx.fillText(
             `Level ${level} - Are you ready?`,
@@ -517,6 +724,12 @@
         drawBullets();
         drawExplosions();
         asteroids.forEach(drawAsteroid);
+        updateBoss();
+        updateBossBullets();
+
+        drawBoss();
+        drawBossBullets();
+        drawBossHP();
 
         if (asteroids.length === 0) nextLevel();
 
@@ -524,6 +737,7 @@
       }
 
       spawnAsteroids(4);
+      if (level === bossLevel) spawnBoss();
       gameLoop();
     </script>
   </body>
