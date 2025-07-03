@@ -770,7 +770,7 @@
       }
 
       function drawBossBullets() {
-        ctx.fillStyle = "#222222";
+        ctx.fillStyle = "#444444";
         bossBullets.forEach((b) => {
           ctx.beginPath();
           ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
@@ -808,7 +808,7 @@
           y: 150,
           radiusX: 60,
           radiusY: 40,
-          hp: difficulty === "Easy" ? 60 : 100,
+          hp: difficulty === "Easy" ? 50 : 100,
           vx: 1.5,
           vy: 1,
           shootCooldown: 0,
@@ -821,7 +821,7 @@
           y: 150,
           radiusX: 60,
           radiusY: 40,
-          hp: difficulty === "Easy" ? 150 : 250,
+          hp: difficulty === "Easy" ? 125 : 250,
           vx: 1.5,
           vy: 1,
           shootCooldown: 0,
