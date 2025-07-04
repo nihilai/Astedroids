@@ -53,19 +53,22 @@
         "music/New-York-Zoo.mp3",
         "music/Piano-Quack.mp3",
         "music/Rotating-Rocks.mp3",
-        "music/Xmas-05.mp3",
-        "music/Andorra.mp3",
         "music/Heavy-Bass.mp3",
-        "music/Cha-Cha Cha.mp3",
-        "music/Aretha-Kubjelle.mp3",
-        "music/Domino-Blocks.mp3",
         "music/Ena.mp3",
+        "music/Cha-Cha-Cha.mp3",
+        "music/Rodeo.mp3",
         "music/Kelnerr-Utenom.mp3",
-        "music/Kutta-opp-FLIS.mp3",
-        "music/Kynisismen.mp3",
+        "music/Domino-Blocks.mp3",
+        "music/David-kontra-Goliat.mp3",
+        "music/krig.mp3",
+        "music/Rotating-Rocks.mp3",
+        "music/Miles-Parker.mp3",
+        "music/Kjarlighet-3.mp3",
+        "music/Pianomassaker.mp3",
         "music/Nicolae-Ceau.mp3",
+        "music/No-More-Poker.mp3",
         "music/Sen-era.mp3",
-        "music/Samlege.mp3",
+        "music/synth.mp3",
       ];
 
       const music = musicFilenames.map((filename) => new Audio(filename));
@@ -78,10 +81,12 @@
             track.currentTime = 0;
           }
         });
+        // Only reset currentTime if the track is not already playing or if resume is false
         if (resume) {
           if (music[currentTrack].paused || music[currentTrack].ended) {
             music[currentTrack].play();
           }
+          // else: already playing, do nothing
         } else {
           music[currentTrack].currentTime = 0;
           music[currentTrack].play();
@@ -154,7 +159,6 @@
           if (e.key === "1" || e.key === "2") {
             difficulty = e.key === "1" ? "Easy" : "Hard";
             showStartScreen = false;
-            // Start music playlist from the first track
             playNextTrack();
           }
           return;
@@ -459,6 +463,7 @@
       }
 
       // ==== UPDATE FUNCTIONS ====
+
       function updateShip() {
         if (keys["ArrowLeft"]) ship.rotationSpeed = -rotationSpeed;
         else if (keys["ArrowRight"]) ship.rotationSpeed = rotationSpeed;
@@ -576,7 +581,6 @@
 
             if (bossObj.hp <= 0) {
               score += bossObj === boss ? 5000 : 10000;
-
               if (level !== boss3Level || (!boss && !boss2)) {
                 bossBullets.length = 0;
               }
@@ -639,7 +643,6 @@
       }
 
       function handleCollisions() {
-        // Special handling for level 15: both bosses must be defeated
         if (level === boss3Level && (boss || boss2)) {
           let boss1Died = false;
           let boss2Died = false;
@@ -651,7 +654,6 @@
             boss2 = null;
             boss2Died = true;
           }
-          // Only trigger game over and stop music if BOTH bosses are dead
           if (!boss && !boss2) {
             lives += 3;
             // Stop all music
@@ -665,10 +667,10 @@
             boss2Music.currentTime = 0;
             boss3Music.pause && boss3Music.pause();
             boss3Music.currentTime = 0;
-            // Fix: Only set gameOver and show alert after a short delay to allow the last frame to render
+            // Show victory alert after a short delay to allow the last frame to render
             setTimeout(() => {
               showAlertWithKeyBlock(
-                "You motherfucker! I'm gonna slap my cock in your whorish face! Game complete!\nYour score: " +
+                "Congratulations! You have completed the game!\nYour score: " +
                   score
               );
               gameOver = true;
@@ -808,6 +810,7 @@
             }
           }
 
+          // Miniboss bullet collision with player
           for (let k = bossBullets.length - 1; k >= 0; k--) {
             const b = bossBullets[k];
             const dx = b.x - ship.x;
@@ -967,7 +970,7 @@
 
       function spawnBoss() {
         boss = {
-          x: 150,
+          x: 150, // left side
           y: 150,
           radiusX: 60,
           radiusY: 40,
@@ -980,7 +983,7 @@
 
       function spawnBoss2() {
         boss2 = {
-          x: canvas.width - 150,
+          x: canvas.width - 150, // right side
           y: 150,
           radiusX: 60,
           radiusY: 40,
