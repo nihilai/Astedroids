@@ -159,6 +159,7 @@
       const bullets = [];
       const explosions = [];
       const asteroids = [];
+      const minibosses = [];
 
       // ==== INPUT HANDLING ====
 
@@ -203,8 +204,6 @@
         }
       });
 
-      // Old gameLoop (unused) removed
-
       // ==== GAME FUNCTIONS ====
       function shootBullet() {
         const baseAngle = ship.angle - Math.PI / 2;
@@ -218,7 +217,7 @@
             y: ship.y,
             vx: Math.cos(baseAngle) * 5,
             vy: Math.sin(baseAngle) * 5,
-            life: 60,
+            life: 70,
           });
         } else if (level === 3 || level === 4) {
           const angles = [-0.26, 0.26];
@@ -228,22 +227,17 @@
               y: ship.y,
               vx: Math.cos(baseAngle + offset) * 5,
               vy: Math.sin(baseAngle + offset) * 5,
-              life: 70,
-            });
-          });
-        } else if (level === 5 || level === 6) {
-          const angles = [-0.26, 0, 0.26];
-          angles.forEach((offset) => {
-            bullets.push({
-              x: ship.x,
-              y: ship.y,
-              vx: Math.cos(baseAngle + offset) * 5,
-              vy: Math.sin(baseAngle + offset) * 5,
               life: 80,
             });
           });
-        } else if (level === 7 || level === 8) {
-          const angles = [-0.52, -0.26, 0, 0.26, 0.52];
+        } else if (
+          level === 5 ||
+          level === 6 ||
+          level === 7 ||
+          level === 8 ||
+          level === 9
+        ) {
+          const angles = [-0.26, 0, 0.26];
           angles.forEach((offset) => {
             bullets.push({
               x: ship.x,
@@ -253,8 +247,8 @@
               life: 90,
             });
           });
-        } else if (level >= 9) {
-          const angles = [-0.78, -0.52, -0.26, 0, 0.26, 0.52, 0.78];
+        } else if (level >= 10) {
+          const angles = [-0.52, -0.26, 0, 0.26, 0.52];
           angles.forEach((offset) => {
             bullets.push({
               x: ship.x,
@@ -305,6 +299,21 @@
         });
       }
 
+      function miniBossShoot(miniboss) {
+        const dx = ship.x - miniboss.x;
+        const dy = ship.y - miniboss.y;
+        let angle = Math.atan2(dy, dx);
+        angle += Math.random() * 0.2 - 0.1;
+        const speed = difficulty === "Easy" ? 1.5 : 2;
+        bossBullets.push({
+          x: miniboss.x,
+          y: miniboss.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 3,
+        });
+      }
+
       function isInvincible() {
         return Date.now() - spawnTime < 2000;
       }
@@ -335,6 +344,34 @@
         }
       }
 
+      function spawnMiniboss1() {
+        minibosses.push({
+          x: Math.random() * canvas.width,
+          y: 100,
+          radiusX: 30,
+          radiusY: 20,
+          hp: difficulty === "Easy" ? 10 : 20,
+          vx: 1,
+          vy: 1,
+          shootCooldown: 0,
+          type: 1,
+        });
+      }
+
+      function spawnMiniboss2() {
+        minibosses.push({
+          x: Math.random() * canvas.width,
+          y: 100,
+          radiusX: 40,
+          radiusY: 30,
+          hp: difficulty === "Easy" ? 25 : 50,
+          vx: 1.2,
+          vy: 1.2,
+          shootCooldown: 0,
+          type: 2,
+        });
+      }
+
       let bossSpawned = false;
       let boss2Spawned = false;
 
@@ -360,10 +397,9 @@
           spawnBoss2();
           boss2Spawned = true;
         } else {
-          // Resume playlist if not boss level, and continue from current position
+          // Spawning of asteroids and minibosses now only happens in the level screen logic
           if (!paused) playNextTrack(true);
         }
-        // Asteroids for non-boss levels are spawned after the level screen
       }
 
       function resetShip() {
@@ -670,6 +706,67 @@
         }
       }
 
+      function updateMinibosses() {
+        for (let i = minibosses.length - 1; i >= 0; i--) {
+          const mb = minibosses[i];
+          mb.x += mb.vx;
+          mb.y += mb.vy;
+          if (mb.x > canvas.width - mb.radiusX || mb.x < mb.radiusX)
+            mb.vx *= -1;
+          if (mb.y > canvas.height / 2 || mb.y < 50) mb.vy *= -1;
+          mb.shootCooldown--;
+          if (mb.shootCooldown <= 0) {
+            miniBossShoot(mb);
+            mb.shootCooldown = 100;
+          }
+
+          // Bullet collision with miniboss
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j];
+            const dx = b.x - mb.x;
+            const dy = b.y - mb.y;
+            // Ellipse collision
+            const normX = dx / mb.radiusX;
+            const normY = dy / mb.radiusY;
+            if (normX * normX + normY * normY <= 1) {
+              // Miniboss HP: 1/10th of boss type
+              mb.hp--;
+              bullets.splice(j, 1);
+              if (mb.hp <= 0) {
+                score += mb.type === 2 ? 1000 : 500;
+                explosions.push({ x: mb.x, y: mb.y, radius: 0, max: 15 });
+                minibosses.splice(i, 1);
+                break;
+              }
+            }
+          }
+
+          // Miniboss bullet collision with player
+          for (let k = bossBullets.length - 1; k >= 0; k--) {
+            const b = bossBullets[k];
+            const dx = b.x - ship.x;
+            const dy = b.y - ship.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < b.radius + ship.radius) {
+              if (!isInvincible()) {
+                lives--;
+                bossBullets.splice(k, 1);
+                if (lives < 0) {
+                  gameOver = true;
+                  const retry = confirm(
+                    "Game Over! Your score: " + score + "\nTry again?"
+                  );
+                  if (retry) location.reload();
+                  return;
+                } else {
+                  resetShip();
+                }
+              }
+            }
+          }
+        }
+      }
+
       function updateBoss() {
         updateBossPositionAndShoot(boss, bossShoot);
       }
@@ -905,6 +1002,63 @@
         ctx.restore();
       }
 
+      function drawMinibosses() {
+        minibosses.forEach((mb) => {
+          ctx.save();
+          ctx.translate(mb.x, mb.y);
+          if (mb.type === 2) {
+            ctx.lineWidth = 10;
+            const bodyRadius = mb.radiusX * 1.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, bodyRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.strokeStyle = "white";
+            const armLength = bodyRadius + 40;
+            for (let i = 0; i < 8; i++) {
+              const angle = (Math.PI / 4) * i;
+              const x = Math.cos(angle) * armLength;
+              const y = Math.sin(angle) * armLength;
+              ctx.beginPath();
+              ctx.moveTo(0, 0);
+              ctx.lineTo(x, y);
+              ctx.stroke();
+            }
+            ctx.beginPath();
+            ctx.arc(0, 0, mb.radiusX * 0.3, 0, 2 * Math.PI);
+            ctx.fillStyle = "#000000";
+            ctx.fill();
+          } else {
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.ellipse(0, 0, mb.radiusX, mb.radiusY, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(
+              0,
+              0,
+              mb.radiusX * 0.3,
+              mb.radiusY * 0.3,
+              0,
+              0,
+              2 * Math.PI
+            );
+            ctx.fillStyle = "#000000";
+            ctx.fill();
+            for (let i = 0; i < 4; i++) {
+              const angle = (Math.PI / 2) * i;
+              const x = Math.cos(angle) * mb.radiusX;
+              const y = Math.sin(angle) * mb.radiusY;
+              ctx.beginPath();
+              ctx.ellipse(x, y, 15, 5, angle, 0, 2 * Math.PI);
+              ctx.fillStyle = "white";
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+        });
+      }
+
       function drawBossHP() {
         if (!boss) return;
         ctx.fillStyle = "lightgray";
@@ -986,12 +1140,22 @@
           levelScreenTimer--;
           if (levelScreenTimer <= 0) {
             showLevelScreen = false;
-            // Only spawn asteroids if not a boss level
+            // Only spawn asteroids/minibosses if not a boss level
             if (level !== bossLevel && level !== boss2Level) {
-              const baseAsteroids = 3 + (level - 1); // Increase by 1 per level
-              spawnAsteroids(
-                difficulty === "Easy" ? baseAsteroids - 1 : baseAsteroids
-              );
+              let baseAsteroids = 3 + (level - 1);
+              if (difficulty === "Easy") baseAsteroids--;
+              if (baseAsteroids < 1) baseAsteroids = 1;
+              spawnAsteroids(baseAsteroids);
+              if (level >= 6 && level <= 9) {
+                for (let i = 0; i < level - 5; i++) {
+                  spawnMiniboss1();
+                }
+              }
+              if (level >= 11) {
+                for (let i = 0; i < level - 10; i++) {
+                  spawnMiniboss2();
+                }
+              }
             }
           }
           requestAnimationFrame(gameLoop);
@@ -1031,6 +1195,7 @@
         asteroids.forEach(drawAsteroid);
         updateBoss();
         updateBoss2();
+        updateMinibosses();
         updateBossBullets();
 
         drawBoss();
@@ -1038,8 +1203,16 @@
         drawBossHP();
         drawBoss2();
         drawBoss2HP();
+        drawMinibosses();
 
-        if (asteroids.length === 0 && !boss && !boss2) nextLevel();
+        // Only progress if all asteroids and minibosses are destroyed, and no boss is present
+        if (
+          asteroids.length === 0 &&
+          minibosses.length === 0 &&
+          !boss &&
+          !boss2
+        )
+          nextLevel();
 
         requestAnimationFrame(gameLoop);
       }
