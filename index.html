@@ -98,8 +98,8 @@
       });
 
       let bossMusic1 = new Audio("music/kule_lyder.mp3");
-      let boss2Music = new Audio("music/boss2.mp3");
-      let boss3Music = new Audio("music/Panzergeist.mp3");
+      let bossMusic2 = new Audio("music/boss2.mp3");
+      let bossMusic3 = new Audio("music/Panzergeist.mp3");
 
       const canvas = document.getElementById("game");
       const ctx = canvas.getContext("2d");
@@ -171,6 +171,15 @@
           paused = !paused;
           if (paused) {
             music[currentTrack].pause();
+            bossMusic1.pause();
+            bossMusic2.pause();
+            bossMusic3.pause();
+          } else if (level === 5) {
+            bossMusic1.play();
+          } else if (level === 10) {
+            bossMusic2.play();
+          } else if (level === 15) {
+            bossMusic3.play();
           } else {
             music[currentTrack].play();
           }
@@ -391,16 +400,16 @@
             track.pause();
             track.currentTime = 0;
           });
-          boss2Music.currentTime = 0;
-          boss2Music.play();
+          bossMusic2.currentTime = 0;
+          bossMusic2.play();
           spawnBoss2();
         } else if (level === 15) {
           music.forEach((track) => {
             track.pause();
             track.currentTime = 0;
           });
-          boss3Music.currentTime = 0;
-          boss3Music.play();
+          bossMusic3.currentTime = 0;
+          bossMusic3.play();
           spawnBoss();
           spawnBoss2();
         }
@@ -648,8 +657,8 @@
               track.pause();
               track.currentTime = 0;
             });
-            boss3Music.pause();
-            boss3Music.currentTime = 0;
+            bossMusic3.pause();
+            bossMusic3.currentTime = 0;
             setTimeout(() => {
               showEndScreen = true;
             }, 100);
@@ -673,7 +682,7 @@
           if (boss2) {
             if (handleBossCollision(boss2, bossBullets)) {
               boss2 = null;
-              boss2Music.pause();
+              bossMusic2.pause();
               lives += 2;
               showLevelScreen = true;
               levelScreenTimer = 120;
