@@ -54,23 +54,23 @@
         "music/Piano-Quack.mp3",
         "music/Nicolae-Ceau.mp3",
         "music/kule_lyder.mp3",
-        "music/Domino-Blocks.mp3",
-        "music/Cha-Cha-Cha.mp3",
+        "music/Sen-era.mp3",
+        "music/synth.mp3",
+        "music/Rodeo.mp3",
         "music/Ena.mp3",
-        "music/Heavy-Bass.mp3",
         "music/boss2.mp3",
         "music/Rotating-Rocks.mp3",
         "music/krig.mp3",
-        "music/Rodeo.mp3",
         "music/Kelnerr-Utenom.mp3",
+        "music/Cha-Cha-Cha.mp3",
         "music/David-kontra-Goliat.mp3",
         "music/Miles-Parker.mp3",
         "music/Kjarlighet-3.mp3",
         "music/Pianomassaker.mp3",
         "music/No-More-Poker.mp3",
         "music/Panzergeist.mp3",
-        "music/synth.mp3",
-        "music/Sen-era.mp3",
+        "music/Domino-Blocks.mp3",
+        "music/Heavy-Bass.mp3",
       ];
 
       const music = musicFilenames.map((filename) => new Audio(filename));
@@ -449,9 +449,11 @@
       let boss3Spawned = false;
 
       function nextLevel() {
-        level++;
-        showLevelScreen = true;
-        levelScreenTimer = 120;
+        if (level !== 15) {
+          level++;
+          showLevelScreen = true;
+          levelScreenTimer = 120;
+        }
 
         if (level === 5) {
           currentTrack = 3;
@@ -461,7 +463,7 @@
           currentTrack = 8;
           playNextTrack();
           spawnBoss2();
-        } else if (level === 15) {
+        } else if (level === 15 && !gameOver) {
           currentTrack = 18;
           playNextTrack();
           spawnBoss();
@@ -719,10 +721,7 @@
             boss2Died = true;
           }
           if (!boss && !boss2) {
-            lives += 3;
-            setTimeout(() => {
-              showEndScreen = true;
-            }, 100);
+            showEndScreen = true;
             return;
           }
         } else {
