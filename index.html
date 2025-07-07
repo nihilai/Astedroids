@@ -52,23 +52,25 @@
       const musicFilenames = [
         "music/New-York-Zoo.mp3",
         "music/Piano-Quack.mp3",
-        "music/Rotating-Rocks.mp3",
-        "music/Heavy-Bass.mp3",
-        "music/Ena.mp3",
+        "music/Nicolae-Ceau.mp3",
+        "music/kule_lyder.mp3",
+        "music/Domino-Blocks.mp3",
         "music/Cha-Cha-Cha.mp3",
+        "music/Ena.mp3",
+        "music/Heavy-Bass.mp3",
+        "music/boss2.mp3",
+        "music/Rotating-Rocks.mp3",
+        "music/krig.mp3",
         "music/Rodeo.mp3",
         "music/Kelnerr-Utenom.mp3",
-        "music/Domino-Blocks.mp3",
         "music/David-kontra-Goliat.mp3",
-        "music/krig.mp3",
-        "music/Rotating-Rocks.mp3",
         "music/Miles-Parker.mp3",
         "music/Kjarlighet-3.mp3",
         "music/Pianomassaker.mp3",
-        "music/Nicolae-Ceau.mp3",
         "music/No-More-Poker.mp3",
-        "music/Sen-era.mp3",
+        "music/Panzergeist.mp3",
         "music/synth.mp3",
+        "music/Sen-era.mp3",
       ];
 
       const music = musicFilenames.map((filename) => new Audio(filename));
@@ -96,13 +98,6 @@
           playNextTrack();
         };
       });
-
-      let bossMusic1 = new Audio("music/kule_lyder.mp3");
-      bossMusic1.loop = true;
-      let bossMusic2 = new Audio("music/boss2.mp3");
-      bossMusic2.loop = true;
-      let bossMusic3 = new Audio("music/Panzergeist.mp3");
-      bossMusic3.loop = true;
 
       const canvas = document.getElementById("game");
       const ctx = canvas.getContext("2d");
@@ -174,15 +169,6 @@
           paused = !paused;
           if (paused) {
             music[currentTrack].pause();
-            bossMusic1.pause();
-            bossMusic2.pause();
-            bossMusic3.pause();
-          } else if (level === 5) {
-            bossMusic1.play();
-          } else if (level === 10) {
-            bossMusic2.play();
-          } else if (level === 15) {
-            bossMusic3.play();
           } else {
             music[currentTrack].play();
           }
@@ -218,7 +204,7 @@
             y: ship.y,
             vx: Math.cos(baseAngle) * 5,
             vy: Math.sin(baseAngle) * 5,
-            life: 70,
+            life: 90,
           });
         } else if (level === 3 || level === 4) {
           const angles = [-0.26, 0.26];
@@ -228,7 +214,7 @@
               y: ship.y,
               vx: Math.cos(baseAngle + offset) * 5,
               vy: Math.sin(baseAngle + offset) * 5,
-              life: 80,
+              life: 100,
             });
           });
         } else if (
@@ -245,7 +231,7 @@
               y: ship.y,
               vx: Math.cos(baseAngle + offset) * 5,
               vy: Math.sin(baseAngle + offset) * 5,
-              life: 90,
+              life: 110,
             });
           });
         } else if (level >= 10) {
@@ -256,7 +242,7 @@
               y: ship.y,
               vx: Math.cos(baseAngle + offset) * 5,
               vy: Math.sin(baseAngle + offset) * 5,
-              life: 100,
+              life: 120,
             });
           });
         }
@@ -468,28 +454,16 @@
         levelScreenTimer = 120;
 
         if (level === 5) {
-          music.forEach((track) => {
-            track.pause();
-            track.currentTime = 0;
-          });
-          bossMusic1.currentTime = 0;
-          bossMusic1.play();
+          currentTrack = 3;
+          playNextTrack();
           spawnBoss();
         } else if (level === 10) {
-          music.forEach((track) => {
-            track.pause();
-            track.currentTime = 0;
-          });
-          bossMusic2.currentTime = 0;
-          bossMusic2.play();
+          currentTrack = 8;
+          playNextTrack();
           spawnBoss2();
         } else if (level === 15) {
-          music.forEach((track) => {
-            track.pause();
-            track.currentTime = 0;
-          });
-          bossMusic3.currentTime = 0;
-          bossMusic3.play();
+          currentTrack = 18;
+          playNextTrack();
           spawnBoss();
           spawnBoss2();
         }
@@ -746,12 +720,6 @@
           }
           if (!boss && !boss2) {
             lives += 3;
-            music.forEach((track) => {
-              track.pause();
-              track.currentTime = 0;
-            });
-            bossMusic3.pause();
-            bossMusic3.currentTime = 0;
             setTimeout(() => {
               showEndScreen = true;
             }, 100);
@@ -761,28 +729,14 @@
           if (boss) {
             if (handleBossCollision(boss, bossBullets)) {
               boss = null;
-              bossMusic1.pause();
               lives++;
-              showLevelScreen = true;
-              levelScreenTimer = 120;
-              level++;
-              currentTrack = 5;
-              if (!paused) playNextTrack();
-              return;
             }
           }
 
           if (boss2) {
             if (handleBossCollision(boss2, bossBullets)) {
               boss2 = null;
-              bossMusic2.pause();
               lives += 2;
-              showLevelScreen = true;
-              levelScreenTimer = 120;
-              level++;
-              currentTrack = 10;
-              if (!paused) playNextTrack();
-              return;
             }
           }
         }
@@ -1218,22 +1172,19 @@
         }
       }
 
-      function playNextTrack(resume = false) {
+      function playNextTrack() {
         loadTrack(currentTrack);
+
         music.forEach((track, idx) => {
           if (idx !== currentTrack && track) {
             track.pause();
             track.currentTime = 0;
           }
         });
-        if (resume) {
-          if (music[currentTrack].paused || music[currentTrack].ended) {
-            music[currentTrack].play();
-          }
-        } else {
-          music[currentTrack].currentTime = 0;
-          music[currentTrack].play();
-        }
+
+        const current = music[currentTrack];
+        current.currentTime = 0;
+        current.play();
       }
 
       // ==== MAIN LOOP ====
