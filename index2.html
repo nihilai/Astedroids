@@ -1,1540 +1,1539 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <title>Astedroids</title>
-        <style>
-        @font-face {
-            font-family: "Harlow Solid";
-            src: url("fonts/HARLOWSI.TTF") format("truetype");
-        }
-        h1 {
-            font-size: 4em;
-            margin: 0px;
-            font-family: "Harlow Solid", sans-serif;
-            color: lightgray;
-            text-align: center;
-        }
-        p {
-            margin: 2px;
-            font-family: Noto Sans, sans-serif;
-            color: lightgray;
-            text-align: center;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            background: #555555;
-            background-image: url("saturn.jpg");
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-blend-mode: overlay;
-            overflow: hidden;
-        }
-        canvas {
-            display: block;
-            margin: 0 auto;
-            background: #111;
-            border: 10px solid #efefef;
-        }
-        </style>
-    </head>
-    <body>
-        <h1>Astedroids</h1>
-        <p>by Nikolai Myhre</p>
-        <canvas id="game" width="1120" height="560"></canvas>
-        <script>
-        let showStartScreen = true;
-        const img = new Image();
-        img.src = "space.jpg";
+  <head>
+    <meta charset="UTF-8" />
+    <title>Astedroids</title>
+    <style>
+      @font-face {
+        font-family: "Harlow Solid";
+        src: url("fonts/HARLOWSI.TTF") format("truetype");
+      }
+      h1 {
+        font-size: 4em;
+        margin: 0px;
+        font-family: "Harlow Solid", sans-serif;
+        color: lightgray;
+        text-align: center;
+      }
+      p {
+        margin: 2px;
+        font-family: Noto Sans, sans-serif;
+        color: lightgray;
+        text-align: center;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #555555;
+        background-image: url("saturn.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-blend-mode: overlay;
+        overflow: hidden;
+      }
+      canvas {
+        display: block;
+        margin: 0 auto;
+        background: #111;
+        border: 10px solid #efefef;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Astedroids</h1>
+    <p>by Nikolai Myhre</p>
+    <canvas id="game" width="1120" height="560"></canvas>
+    <script>
+      let showStartScreen = true;
+      const img = new Image();
+      img.src = "space.jpg";
 
-        const musicFilenames = [
-            "music/New-York-Zoo.mp3",
-            "music/Rodeo.mp3",
-            "music/Nicolae-Ceau.mp3",
-            "music/kule_lyder.mp3",
-            "music/Rotating-Rocks.mp3",
-            "music/Cha-Cha-Cha.mp3",
-            "music/synth.mp3",
-            "music/Ena.mp3",
-            "music/boss2.mp3",
-            "music/krig.mp3",
-            "music/Kelnerr-Utenom.mp3",
-            "music/Sen-era.mp3",
-            "music/David-kontra-Goliat.mp3",
-            "music/Miles-Parker.mp3",
-            "music/Kjarlighet-3.mp3",
-            "music/Pianomassaker.mp3",
-            "music/Piano-Quack.mp3",
-            "music/No-More-Poker.mp3",
-            "music/Panzergeist.mp3",
-            "music/Domino-Blocks.mp3",
-            "music/Heavy-Bass.mp3",
-        ];
+      const musicFilenames = [
+        "music/New-York-Zoo.mp3",
+        "music/Rodeo.mp3",
+        "music/Nicolae-Ceau.mp3",
+        "music/kule_lyder.mp3",
+        "music/Rotating-Rocks.mp3",
+        "music/Cha-Cha-Cha.mp3",
+        "music/synth.mp3",
+        "music/Ena.mp3",
+        "music/boss2.mp3",
+        "music/krig.mp3",
+        "music/Kelnerr-Utenom.mp3",
+        "music/Sen-era.mp3",
+        "music/David-kontra-Goliat.mp3",
+        "music/Miles-Parker.mp3",
+        "music/Kjarlighet-3.mp3",
+        "music/Pianomassaker.mp3",
+        "music/Piano-Quack.mp3",
+        "music/No-More-Poker.mp3",
+        "music/Panzergeist.mp3",
+        "music/Domino-Blocks.mp3",
+        "music/Heavy-Bass.mp3",
+      ];
 
-        const music = musicFilenames.map((filename) => new Audio(filename));
-        let currentTrack = 0;
+      const music = musicFilenames.map((filename) => new Audio(filename));
+      let currentTrack = 0;
 
-        function playNextTrack(resume = false) {
-            music.forEach((track, idx) => {
-            if (idx !== currentTrack) {
-                track.pause();
-                track.currentTime = 0;
-            }
-            });
-            if (resume) {
-            if (music[currentTrack].paused || music[currentTrack].ended) {
-                music[currentTrack].play();
-            }
-            } else {
-            music[currentTrack].currentTime = 0;
-            music[currentTrack].play();
-            }
-        }
+      function playNextTrack(resume = false) {
         music.forEach((track, idx) => {
-            track.onended = () => {
-            currentTrack = (currentTrack + 1) % music.length;
-            playNextTrack();
-            };
+          if (idx !== currentTrack) {
+            track.pause();
+            track.currentTime = 0;
+          }
         });
-
-        const canvas = document.getElementById("game");
-        const ctx = canvas.getContext("2d");
-
-        // ==== GAME STATE ====
-        const keys = {};
-        let canShoot = true;
-        let difficulty = "Hard";
-        let score = 0;
-        let level = 0;
-        let bossLevel = 5;
-        let boss2Level = 10;
-        let boss3Level = 15;
-        let showLevelScreen = false;
-        let showEndScreen = false;
-        let levelScreenTimer = 0;
-        let spawnTime = Date.now();
-        let paused = false;
-        let gameOver = false;
-        let boss = null;
-        let boss2 = null;
-        const bossBullets = [];
-
-        const friction = 0.98;
-        const rotationSpeed = 0.05;
-        const thrustPower = 0.12;
-        let thrustStopTimeout;
-        const laserSound = new Audio("laser-shot-ingame-230500.mp3");
-        const thrustSound = new Audio("loopingthrust-95548.mp3");
-
-        const asteroidSizeMap = { large: 50, medium: 30, small: 15 };
-        const velocityBySize = { large: 1, medium: 2, small: 3 };
-        const points = { large: 50, medium: 70, small: 100 };
-
-        const ship = {
-            x: canvas.width / 2,
-            y: canvas.height / 2,
-            radius: 15,
-            angle: 0,
-            vx: 0,
-            vy: 0,
-            rotationSpeed: 0,
-            thrusting: false,
+        if (resume) {
+          if (music[currentTrack].paused || music[currentTrack].ended) {
+            music[currentTrack].play();
+          }
+        } else {
+          music[currentTrack].currentTime = 0;
+          music[currentTrack].play();
+        }
+      }
+      music.forEach((track, idx) => {
+        track.onended = () => {
+          currentTrack = (currentTrack + 1) % music.length;
+          playNextTrack();
         };
+      });
 
-        const bullets = [];
-        const explosions = [];
-        const asteroids = [];
-        const minibosses = [];
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
 
-        // ==== INPUT HANDLING ====
+      // ==== GAME STATE ====
+      const keys = {};
+      let canShoot = true;
+      let difficulty = "Hard";
+      let score = 0;
+      let level = 0;
+      let bossLevel = 5;
+      let boss2Level = 10;
+      let boss3Level = 15;
+      let showLevelScreen = false;
+      let showEndScreen = false;
+      let levelScreenTimer = 0;
+      let spawnTime = Date.now();
+      let paused = false;
+      let gameOver = false;
+      let boss = null;
+      let boss2 = null;
+      const bossBullets = [];
 
-        window.addEventListener("keydown", (e) => {
-            if (showStartScreen) {
-                if (e.key === "1") {
-                difficulty = "Easy";
-                lives = 8;
-                showStartScreen = false;
-                playNextTrack();
-            } else if (e.key === "2") {
-                difficulty = "Normal";
-                lives = 6;
-                showStartScreen = false;
-                playNextTrack();
-            } else if (e.key === "3") {
-                difficulty = "Hard";
-                lives = 4;
-                showStartScreen = false;
-                playNextTrack();
-            }
-            return;
-            }
-            keys[e.key] = true;
-            if (e.key === " " && canShoot) {
-            shootBullet();
-            canShoot = false;
-            }
-            if (e.key === "p") {
-            paused = !paused;
-            if (paused) {
-                music[currentTrack].pause();
-            } else {
-                music[currentTrack].play();
-            }
-            }
-        });
+      const friction = 0.98;
+      const rotationSpeed = 0.05;
+      const thrustPower = 0.12;
+      let thrustStopTimeout;
+      const laserSound = new Audio("laser-shot-ingame-230500.mp3");
+      const thrustSound = new Audio("loopingthrust-95548.mp3");
 
-        window.addEventListener("keyup", (e) => {
-            keys[e.key] = false;
-            if (e.key === " ") canShoot = true;
-            if (!keys["ArrowLeft"] && !keys["ArrowRight"]) ship.rotationSpeed = 0;
-            if (!keys["ArrowUp"]) {
-            if (ship.thrusting) {
-                clearTimeout(thrustStopTimeout);
-                thrustStopTimeout = setTimeout(() => {
-                thrustSound.pause();
-                thrustSound.currentTime = 0;
-                ship.thrusting = false;
-                }, 200);
-            }
-            }
-        });
+      const asteroidSizeMap = { large: 50, medium: 30, small: 15 };
+      const velocityBySize = { large: 1, medium: 2, small: 3 };
+      const points = { large: 50, medium: 70, small: 100 };
 
-        // ==== GAME FUNCTIONS ====
-        function shootBullet() {
-            const baseAngle = ship.angle - Math.PI / 2;
-            const shot = laserSound.cloneNode();
-            shot.volume = 0.1;
-            shot.play();
+      const ship = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        radius: 15,
+        angle: 0,
+        vx: 0,
+        vy: 0,
+        rotationSpeed: 0,
+        thrusting: false,
+      };
 
-            if (level === 1 || level === 2) {
+      const bullets = [];
+      const explosions = [];
+      const asteroids = [];
+      const minibosses = [];
+
+      // ==== INPUT HANDLING ====
+
+      window.addEventListener("keydown", (e) => {
+        if (showStartScreen) {
+          if (e.key === "1") {
+            difficulty = "Easy";
+            lives = 8;
+            showStartScreen = false;
+            playNextTrack();
+          } else if (e.key === "2") {
+            difficulty = "Normal";
+            lives = 6;
+            showStartScreen = false;
+            playNextTrack();
+          } else if (e.key === "3") {
+            difficulty = "Hard";
+            lives = 4;
+            showStartScreen = false;
+            playNextTrack();
+          }
+          return;
+        }
+        keys[e.key] = true;
+        if (e.key === " " && canShoot) {
+          shootBullet();
+          canShoot = false;
+        }
+        if (e.key === "p") {
+          paused = !paused;
+          if (paused) {
+            music[currentTrack].pause();
+          } else {
+            music[currentTrack].play();
+          }
+        }
+      });
+
+      window.addEventListener("keyup", (e) => {
+        keys[e.key] = false;
+        if (e.key === " ") canShoot = true;
+        if (!keys["ArrowLeft"] && !keys["ArrowRight"]) ship.rotationSpeed = 0;
+        if (!keys["ArrowUp"]) {
+          if (ship.thrusting) {
+            clearTimeout(thrustStopTimeout);
+            thrustStopTimeout = setTimeout(() => {
+              thrustSound.pause();
+              thrustSound.currentTime = 0;
+              ship.thrusting = false;
+            }, 200);
+          }
+        }
+      });
+
+      // ==== GAME FUNCTIONS ====
+      function shootBullet() {
+        const baseAngle = ship.angle - Math.PI / 2;
+        const shot = laserSound.cloneNode();
+        shot.volume = 0.1;
+        shot.play();
+
+        if (level === 1 || level === 2) {
+          bullets.push({
+            x: ship.x,
+            y: ship.y,
+            vx: Math.cos(baseAngle) * 5,
+            vy: Math.sin(baseAngle) * 5,
+            life: 90,
+          });
+        } else if (level === 3 || level === 4) {
+          const angles = [-0.26, 0.26];
+          angles.forEach((offset) => {
             bullets.push({
-                x: ship.x,
-                y: ship.y,
-                vx: Math.cos(baseAngle) * 5,
-                vy: Math.sin(baseAngle) * 5,
-                life: 90,
+              x: ship.x,
+              y: ship.y,
+              vx: Math.cos(baseAngle + offset) * 5,
+              vy: Math.sin(baseAngle + offset) * 5,
+              life: 100,
             });
-            } else if (level === 3 || level === 4) {
-            const angles = [-0.26, 0.26];
-            angles.forEach((offset) => {
-                bullets.push({
-                x: ship.x,
-                y: ship.y,
-                vx: Math.cos(baseAngle + offset) * 5,
-                vy: Math.sin(baseAngle + offset) * 5,
-                life: 100,
-                });
+          });
+        } else if (
+          level === 5 ||
+          level === 6 ||
+          level === 7 ||
+          level === 8 ||
+          level === 9
+        ) {
+          const angles = [-0.26, 0, 0.26];
+          angles.forEach((offset) => {
+            bullets.push({
+              x: ship.x,
+              y: ship.y,
+              vx: Math.cos(baseAngle + offset) * 5,
+              vy: Math.sin(baseAngle + offset) * 5,
+              life: 110,
             });
-            } else if (
-            level === 5 ||
-            level === 6 ||
-            level === 7 ||
-            level === 8 ||
-            level === 9
-            ) {
-            const angles = [-0.26, 0, 0.26];
-            angles.forEach((offset) => {
-                bullets.push({
-                x: ship.x,
-                y: ship.y,
-                vx: Math.cos(baseAngle + offset) * 5,
-                vy: Math.sin(baseAngle + offset) * 5,
-                life: 110,
-                });
+          });
+        } else if (level >= 10) {
+          const angles = [-0.52, -0.26, 0, 0.26, 0.52];
+          angles.forEach((offset) => {
+            bullets.push({
+              x: ship.x,
+              y: ship.y,
+              vx: Math.cos(baseAngle + offset) * 5,
+              vy: Math.sin(baseAngle + offset) * 5,
+              life: 120,
             });
-            } else if (level >= 10) {
-            const angles = [-0.52, -0.26, 0, 0.26, 0.52];
-            angles.forEach((offset) => {
-                bullets.push({
-                x: ship.x,
-                y: ship.y,
-                vx: Math.cos(baseAngle + offset) * 5,
-                vy: Math.sin(baseAngle + offset) * 5,
-                life: 120,
-                });
-            });
-            }
+          });
+        }
+      }
+
+      function bossShoot() {
+        if (!boss) return;
+
+        const dx = ship.x - boss.x;
+        const dy = ship.y - boss.y;
+        let angle = Math.atan2(dy, dx);
+
+        angle += Math.random() * 0.2 - 0.1;
+
+        let speed;
+        if (difficulty === "Easy") {
+          speed = 1.5;
+        } else if (difficulty === "Normal") {
+          speed = 2;
+        } else if (difficulty === "Hard") {
+          speed = 2.5;
         }
 
-        function bossShoot() {
-            if (!boss) return;
+        bossBullets.push({
+          x: boss.x,
+          y: boss.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 5,
+          speed,
+        });
+      }
 
-            const dx = ship.x - boss.x;
-            const dy = ship.y - boss.y;
-            let angle = Math.atan2(dy, dx);
+      function boss2Shoot() {
+        if (!boss2) return;
 
-            angle += Math.random() * 0.2 - 0.1;
+        const dx = ship.x - boss2.x;
+        const dy = ship.y - boss2.y;
+        let angle = Math.atan2(dy, dx);
 
-            let speed;
-            if (difficulty === "Easy") {
-            speed = 1.5;
-            } else if (difficulty === "Normal") {
-            speed = 2;
-            } else if (difficulty === "Hard") {
-            speed = 2.5;
-            }
+        angle += Math.random() * 0.2 - 0.1;
 
-            bossBullets.push({
-            x: boss.x,
-            y: boss.y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            radius: 5,
-            speed,
-            });
+        let speed;
+        if (difficulty === "Easy") {
+          speed = 2;
+        } else if (difficulty === "Normal") {
+          speed = 2.5;
+        } else if (difficulty === "Hard") {
+          speed = 3;
         }
 
-        function boss2Shoot() {
-            if (!boss2) return;
+        bossBullets.push({
+          x: boss2.x,
+          y: boss2.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 8,
+          speed,
+        });
+      }
 
-            const dx = ship.x - boss2.x;
-            const dy = ship.y - boss2.y;
-            let angle = Math.atan2(dy, dx);
+      function miniBossShoot(miniboss) {
+        const dx = ship.x - miniboss.x;
+        const dy = ship.y - miniboss.y;
+        let angle = Math.atan2(dy, dx);
+        angle += Math.random() * 0.2 - 0.1;
 
-            angle += Math.random() * 0.2 - 0.1;
-
-            let speed;
-            if (difficulty === "Easy") {
-            speed = 2;
-            } else if (difficulty === "Normal") {
-            speed = 2.5;
-            } else if (difficulty === "Hard") {
-            speed = 3;
-            }
-
-            bossBullets.push({
-            x: boss2.x,
-            y: boss2.y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            radius: 8,
-            speed,
-            });
+        let life = 250;
+        let speed;
+        if (difficulty === "Easy") {
+          speed = 1.5;
+        } else if (difficulty === "Normal") {
+          speed = 2;
+        } else if (difficulty === "Hard") {
+          speed = 2.5;
         }
 
-        function miniBossShoot(miniboss) {
-            const dx = ship.x - miniboss.x;
-            const dy = ship.y - miniboss.y;
-            let angle = Math.atan2(dy, dx);
-            angle += Math.random() * 0.2 - 0.1;
+        bossBullets.push({
+          x: miniboss.x,
+          y: miniboss.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: 4,
+          speed,
+          life,
+        });
+      }
 
-            let life = 250;
-            let speed;
-            if (difficulty === "Easy") {
-            speed = 1.5;
-            } else if (difficulty === "Normal") {
-            speed = 2;
-            } else if (difficulty === "Hard") {
-            speed = 2.5;
-            }
+      function isInvincible() {
+        return Date.now() - spawnTime < 2000;
+      }
 
-            bossBullets.push({
-            x: miniboss.x,
-            y: miniboss.y,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            radius: 4,
-            speed,
-            life,
-            });
-        }
-
-        function isInvincible() {
-            return Date.now() - spawnTime < 2000;
-        }
-
-        function spawnAsteroids(count) {
-            for (let i = 0; i < count; i++) {
-            let x,
-                y,
-                safe = false;
-            while (!safe) {
-                x = Math.random() * canvas.width;
-                y = Math.random() * canvas.height;
-                const dx = x - ship.x;
-                const dy = y - ship.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                safe = dist > 100;
-            }
-            const sizeLabel = "large";
-            asteroids.push({
-                x,
-                y,
-                vx: Math.random() * 2 - 1,
-                vy: Math.random() * 2 - 1,
-                size: asteroidSizeMap[sizeLabel],
-                sizeLabel,
-                shape: generateRockShape(),
-            });
-            }
-        }
-
-        function spawnBoss() {
-            let x,
+      function spawnAsteroids(count) {
+        for (let i = 0; i < count; i++) {
+          let x,
             y,
             safe = false;
-            while (!safe) {
-            x = 60 + Math.random() * (canvas.width - 120);
-            y = 40 + Math.random() * (canvas.height - 80);
+          while (!safe) {
+            x = Math.random() * canvas.width;
+            y = Math.random() * canvas.height;
             const dx = x - ship.x;
             const dy = y - ship.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             safe = dist > 100;
-            }
-            const angle = Math.random() * Math.PI * 2;
-
-            let speed;
-            let hp;            
-            if (difficulty === "Easy") {
-            hp = 40;
-            speed = 0.5 + Math.random() * 0.5;
-            } else if (difficulty === "Normal") {
-            hp = 60;
-            speed = 1 + Math.random() * 1;
-            } else if (difficulty === "Hard") {
-            hp = 80;
-            speed = 1.5 + Math.random() * 1.5;
-            }
-
-            boss = {
+          }
+          const sizeLabel = "large";
+          asteroids.push({
             x,
             y,
-            radiusX: 60,
-            radiusY: 40,
-            speed,
-            hp,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            shootCooldown: 0,
-            turnTimer: 60 + Math.floor(Math.random() * 120),
-            };
+            vx: Math.random() * 2 - 1,
+            vy: Math.random() * 2 - 1,
+            size: asteroidSizeMap[sizeLabel],
+            sizeLabel,
+            shape: generateRockShape(),
+          });
+        }
+      }
+
+      function spawnBoss() {
+        let x,
+          y,
+          safe = false;
+        while (!safe) {
+          x = 60 + Math.random() * (canvas.width - 120);
+          y = 40 + Math.random() * (canvas.height - 80);
+          const dx = x - ship.x;
+          const dy = y - ship.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          safe = dist > 100;
+        }
+        const angle = Math.random() * Math.PI * 2;
+
+        let speed;
+        let hp;
+        if (difficulty === "Easy") {
+          hp = 40;
+          speed = 0.5 + Math.random() * 0.5;
+        } else if (difficulty === "Normal") {
+          hp = 60;
+          speed = 1 + Math.random() * 1;
+        } else if (difficulty === "Hard") {
+          hp = 80;
+          speed = 1.5 + Math.random() * 1.5;
         }
 
-        function spawnBoss2() {
-            let x,
-            y,
-            safe = false;
-            while (!safe) {
-            x = 60 + Math.random() * (canvas.width - 120);
-            y = 60 + Math.random() * (canvas.height - 120);
-            const dx = x - ship.x;
-            const dy = y - ship.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            safe = dist > 100;
-            }
-            const angle = Math.random() * Math.PI * 2;
+        boss = {
+          x,
+          y,
+          radiusX: 60,
+          radiusY: 40,
+          speed,
+          hp,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          shootCooldown: 0,
+          turnTimer: 60 + Math.floor(Math.random() * 120),
+        };
+      }
 
-            let speed;
-            let hp;            
-            if (difficulty === "Easy") {
-            hp = 80;
-            speed = 1 + Math.random() * 1;
-            } else if (difficulty === "Normal") {
-            hp = 120;
-            speed = 1.5 + Math.random() * 1.5;
-            } else if (difficulty === "Hard") {
-            hp = 160;
-            speed = 2 + Math.random() * 2;
-            }
+      function spawnBoss2() {
+        let x,
+          y,
+          safe = false;
+        while (!safe) {
+          x = 60 + Math.random() * (canvas.width - 120);
+          y = 60 + Math.random() * (canvas.height - 120);
+          const dx = x - ship.x;
+          const dy = y - ship.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          safe = dist > 100;
+        }
+        const angle = Math.random() * Math.PI * 2;
 
-            boss2 = {
-            x,
-            y,
-            radiusX: 60,
-            radiusY: 60,
-            speed,
-            hp,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            shootCooldown: 0,
-            turnTimer: 60 + Math.floor(Math.random() * 120),
-            };
+        let speed;
+        let hp;
+        if (difficulty === "Easy") {
+          hp = 80;
+          speed = 1 + Math.random() * 1;
+        } else if (difficulty === "Normal") {
+          hp = 120;
+          speed = 1.5 + Math.random() * 1.5;
+        } else if (difficulty === "Hard") {
+          hp = 160;
+          speed = 2 + Math.random() * 2;
         }
 
-        function spawnMiniboss1() {
-            let x,
-            y,
-            safe = false;
-            while (!safe) {
-            x = 30 + Math.random() * (canvas.width - 60);
-            y = 20 + Math.random() * (canvas.height - 40);
-            const dx = x - ship.x;
-            const dy = y - ship.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            safe = dist > 100;
-            }
-            const angle = Math.random() * Math.PI * 2;
+        boss2 = {
+          x,
+          y,
+          radiusX: 60,
+          radiusY: 60,
+          speed,
+          hp,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          shootCooldown: 0,
+          turnTimer: 60 + Math.floor(Math.random() * 120),
+        };
+      }
 
-            let speed;
-            let hp;            
-            if (difficulty === "Easy") {
-            hp = 8;
-            speed = 0.5 + Math.random() * 0.5;
-            } else if (difficulty === "Normal") {
-            hp = 12;
-            speed = 1 + Math.random() * 1;
-            } else if (difficulty === "Hard") {
-            hp = 16;
-            speed = 1.5 + Math.random() * 1.5;
-            }
+      function spawnMiniboss1() {
+        let x,
+          y,
+          safe = false;
+        while (!safe) {
+          x = 30 + Math.random() * (canvas.width - 60);
+          y = 20 + Math.random() * (canvas.height - 40);
+          const dx = x - ship.x;
+          const dy = y - ship.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          safe = dist > 100;
+        }
+        const angle = Math.random() * Math.PI * 2;
 
-            minibosses.push({
-            x,
-            y,
-            radiusX: 30,
-            radiusY: 20,
-            speed,
-            hp,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            shootCooldown: 0,
-            type: 1,
-            turnTimer: 60 + Math.floor(Math.random() * 60),
-            });
+        let speed;
+        let hp;
+        if (difficulty === "Easy") {
+          hp = 8;
+          speed = 0.5 + Math.random() * 0.5;
+        } else if (difficulty === "Normal") {
+          hp = 12;
+          speed = 1 + Math.random() * 1;
+        } else if (difficulty === "Hard") {
+          hp = 16;
+          speed = 1.5 + Math.random() * 1.5;
         }
 
-        function spawnMiniboss2() {
-            let x,
-            y,
-            safe = false;
-            while (!safe) {
-            x = 30 + Math.random() * (canvas.width - 60);
-            y = 30 + Math.random() * (canvas.height - 60);
-            const dx = x - ship.x;
-            const dy = y - ship.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            safe = dist > 100;
-            }
-            const angle = Math.random() * Math.PI * 2;
+        minibosses.push({
+          x,
+          y,
+          radiusX: 30,
+          radiusY: 20,
+          speed,
+          hp,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          shootCooldown: 0,
+          type: 1,
+          turnTimer: 60 + Math.floor(Math.random() * 60),
+        });
+      }
 
-            let speed;
-            let hp;            
-            if (difficulty === "Easy") {
-            hp = 16;
-            speed = 1 + Math.random() * 1;
-            } else if (difficulty === "Normal") {
-            hp = 24;
-            speed = 1.5 + Math.random() * 1.5;
-            } else if (difficulty === "Hard") {
-            hp = 32;
-            speed = 2 + Math.random() * 2;
-            }
+      function spawnMiniboss2() {
+        let x,
+          y,
+          safe = false;
+        while (!safe) {
+          x = 30 + Math.random() * (canvas.width - 60);
+          y = 30 + Math.random() * (canvas.height - 60);
+          const dx = x - ship.x;
+          const dy = y - ship.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          safe = dist > 100;
+        }
+        const angle = Math.random() * Math.PI * 2;
 
-            minibosses.push({
-            x,
-            y,
-            radiusX: 30,
-            radiusY: 30,
-            speed,
-            hp,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed,
-            shootCooldown: 0,
-            type: 2,
-            turnTimer: 60 + Math.floor(Math.random() * 60),
-            });
+        let speed;
+        let hp;
+        if (difficulty === "Easy") {
+          hp = 16;
+          speed = 1 + Math.random() * 1;
+        } else if (difficulty === "Normal") {
+          hp = 24;
+          speed = 1.5 + Math.random() * 1.5;
+        } else if (difficulty === "Hard") {
+          hp = 32;
+          speed = 2 + Math.random() * 2;
         }
 
-        let bossSpawned = false;
-        let boss2Spawned = false;
-        let boss3Spawned = false;
+        minibosses.push({
+          x,
+          y,
+          radiusX: 30,
+          radiusY: 30,
+          speed,
+          hp,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          shootCooldown: 0,
+          type: 2,
+          turnTimer: 60 + Math.floor(Math.random() * 60),
+        });
+      }
 
-        function nextLevel() {
-            if (level !== 15) {
-            level++;
-            showLevelScreen = true;
-            levelScreenTimer = 120;
-            }
+      let bossSpawned = false;
+      let boss2Spawned = false;
+      let boss3Spawned = false;
 
-            if (level === 5) {
-            currentTrack = 3;
-            playNextTrack();
-            spawnBoss();
-            } else if (level === 10) {
-            currentTrack = 8;
-            playNextTrack();
-            spawnBoss2();
-            } else if (level === 15 && !gameOver) {
-            currentTrack = 18;
-            playNextTrack();
-            spawnBoss();
-            spawnBoss2();
-            }
+      function nextLevel() {
+        if (level !== 15) {
+          level++;
+          showLevelScreen = true;
+          levelScreenTimer = 120;
         }
 
-        function resetShip() {
-            ship.x = canvas.width / 2;
-            ship.y = canvas.height / 2;
-            ship.vx = 0;
-            ship.vy = 0;
-            spawnTime = Date.now();
+        if (level === 5) {
+          currentTrack = 3;
+          playNextTrack();
+          spawnBoss();
+        } else if (level === 10) {
+          currentTrack = 8;
+          playNextTrack();
+          spawnBoss2();
+        } else if (level === 15 && !gameOver) {
+          currentTrack = 18;
+          playNextTrack();
+          spawnBoss();
+          spawnBoss2();
+        }
+      }
+
+      function resetShip() {
+        ship.x = canvas.width / 2;
+        ship.y = canvas.height / 2;
+        ship.vx = 0;
+        ship.vy = 0;
+        spawnTime = Date.now();
+      }
+
+      function generateRockShape() {
+        const points = 10 + Math.floor(Math.random() * 5);
+        const shape = [];
+        for (let i = 0; i < points; i++) {
+          const angle = (Math.PI * 2 * i) / points;
+          const radiusOffset = 0.6 + Math.random() * 0.5;
+          shape.push({ angle, radiusOffset });
+        }
+        return shape;
+      }
+
+      function splitAsteroid(asteroid) {
+        const newLabel = { large: "medium", medium: "small" }[
+          asteroid.sizeLabel
+        ];
+        if (!newLabel) return [];
+
+        const count =
+          newLabel === "small" ? (difficulty === "Easy" ? 2 : 3) : 2;
+        const newAsteroids = [];
+
+        for (let i = 0; i < count; i++) {
+          newAsteroids.push({
+            x: asteroid.x,
+            y: asteroid.y,
+            vx: Math.random() * 2 - 1,
+            vy: Math.random() * 2 - 1,
+            size: asteroidSizeMap[newLabel],
+            sizeLabel: newLabel,
+            shape: generateRockShape(),
+          });
         }
 
-        function generateRockShape() {
-            const points = 10 + Math.floor(Math.random() * 5);
-            const shape = [];
-            for (let i = 0; i < points; i++) {
-            const angle = (Math.PI * 2 * i) / points;
-            const radiusOffset = 0.6 + Math.random() * 0.5;
-            shape.push({ angle, radiusOffset });
-            }
-            return shape;
+        return newAsteroids;
+      }
+
+      // ==== UPDATE FUNCTIONS ====
+
+      function updateShip() {
+        if (keys["ArrowLeft"]) ship.rotationSpeed = -rotationSpeed;
+        else if (keys["ArrowRight"]) ship.rotationSpeed = rotationSpeed;
+        else ship.rotationSpeed = 0;
+
+        if (keys["ArrowUp"]) {
+          if (!ship.thrusting) {
+            thrustSound.currentTime = 0;
+            thrustSound.play();
+            thrustSound.volume = 0.3;
+            ship.thrusting = true;
+          }
+          ship.vx += Math.cos(ship.angle - Math.PI / 2) * thrustPower;
+          ship.vy += Math.sin(ship.angle - Math.PI / 2) * thrustPower;
+        } else {
+          if (ship.thrusting) {
+            thrustSound.pause();
+            ship.thrusting = false;
+          }
         }
 
-        function splitAsteroid(asteroid) {
-            const newLabel = { large: "medium", medium: "small" }[
-            asteroid.sizeLabel
-            ];
-            if (!newLabel) return [];
+        ship.angle += ship.rotationSpeed;
 
-            const count =
-            newLabel === "small" ? (difficulty === "Easy" ? 2 : 3) : 2;
-            const newAsteroids = [];
+        ship.vx *= friction;
+        ship.vy *= friction;
+        ship.x += ship.vx;
+        ship.y += ship.vy;
 
-            for (let i = 0; i < count; i++) {
-            newAsteroids.push({
-                x: asteroid.x,
-                y: asteroid.y,
-                vx: Math.random() * 2 - 1,
-                vy: Math.random() * 2 - 1,
-                size: asteroidSizeMap[newLabel],
-                sizeLabel: newLabel,
-                shape: generateRockShape(),
-            });
-            }
+        ship.x = Math.max(
+          ship.radius,
+          Math.min(canvas.width - ship.radius, ship.x)
+        );
+        ship.y = Math.max(
+          ship.radius,
+          Math.min(canvas.height - ship.radius, ship.y)
+        );
+      }
 
-            return newAsteroids;
+      function updateBullets() {
+        bullets.forEach((b) => {
+          b.x += b.vx;
+          b.y += b.vy;
+          b.life--;
+        });
+
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          if (bullets[i].life <= 0) bullets.splice(i, 1);
         }
+      }
 
-        // ==== UPDATE FUNCTIONS ====
+      function updateBossBullets() {
+        for (let i = bossBullets.length - 1; i >= 0; i--) {
+          const b = bossBullets[i];
+          b.x += b.vx;
+          b.y += b.vy;
+          if (typeof b.life === "number") b.life--;
 
-        function updateShip() {
-            if (keys["ArrowLeft"]) ship.rotationSpeed = -rotationSpeed;
-            else if (keys["ArrowRight"]) ship.rotationSpeed = rotationSpeed;
-            else ship.rotationSpeed = 0;
+          if (
+            b.x < 0 ||
+            b.x > canvas.width ||
+            b.y < 0 ||
+            b.y > canvas.height ||
+            (typeof b.life === "number" && b.life <= 0)
+          ) {
+            bossBullets.splice(i, 1);
+          }
+        }
+      }
 
-            if (keys["ArrowUp"]) {
-            if (!ship.thrusting) {
-                thrustSound.currentTime = 0;
-                thrustSound.play();
-                thrustSound.volume = 0.3;
-                ship.thrusting = true;
-            }
-            ship.vx += Math.cos(ship.angle - Math.PI / 2) * thrustPower;
-            ship.vy += Math.sin(ship.angle - Math.PI / 2) * thrustPower;
+      function updateAsteroids() {
+        asteroids.forEach((a) => {
+          a.x += a.vx;
+          a.y += a.vy;
+
+          if (a.x < a.size || a.x > canvas.width - a.size) {
+            a.vx *= -1;
+            a.x = Math.max(a.size, Math.min(a.x, canvas.width - a.size));
+          }
+
+          if (a.y < a.size || a.y > canvas.height - a.size) {
+            a.vy *= -1;
+            a.y = Math.max(a.size, Math.min(a.y, canvas.height - a.size));
+          }
+        });
+      }
+
+      function handleBossCollision(bossObj, bossBulletsArray) {
+        const dxBoss = ship.x - bossObj.x;
+        const dyBoss = ship.y - bossObj.y;
+
+        if (
+          Math.abs(dxBoss) < bossObj.radiusX + ship.radius &&
+          Math.abs(dyBoss) < bossObj.radiusY + ship.radius
+        ) {
+          if (!isInvincible()) {
+            lives--;
+            if (lives < 0) {
+              gameOver = true;
+              const retry = confirm(
+                "Game Over! Your score: " + score + "\nTry again?"
+              );
+              if (retry) location.reload();
+              return;
             } else {
-            if (ship.thrusting) {
-                thrustSound.pause();
-                ship.thrusting = false;
+              resetShip();
             }
-            }
-
-            ship.angle += ship.rotationSpeed;
-
-            ship.vx *= friction;
-            ship.vy *= friction;
-            ship.x += ship.vx;
-            ship.y += ship.vy;
-
-            ship.x = Math.max(
-            ship.radius,
-            Math.min(canvas.width - ship.radius, ship.x)
-            );
-            ship.y = Math.max(
-            ship.radius,
-            Math.min(canvas.height - ship.radius, ship.y)
-            );
+          }
         }
 
-        function updateBullets() {
-            bullets.forEach((b) => {
-            b.x += b.vx;
-            b.y += b.vy;
-            b.life--;
-            });
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          const dxB = b.x - bossObj.x;
+          const dyB = b.y - bossObj.y;
 
-            for (let i = bullets.length - 1; i >= 0; i--) {
-            if (bullets[i].life <= 0) bullets.splice(i, 1);
+          const normX = dxB / bossObj.radiusX;
+          const normY = dyB / bossObj.radiusY;
+          if (normX * normX + normY * normY <= 1) {
+            bossObj.hp--;
+            bullets.splice(j, 1);
+
+            if (bossObj.hp <= 0) {
+              score += bossObj === boss ? 5000 : 10000;
+              if (level !== boss3Level || (!boss && !boss2)) {
+                bossBullets.length = 0;
+              }
+              return true;
             }
+          }
         }
 
-        function updateBossBullets() {
-            for (let i = bossBullets.length - 1; i >= 0; i--) {
-            const b = bossBullets[i];
-            b.x += b.vx;
-            b.y += b.vy;
-            if (typeof b.life === "number") b.life--;
-
-            if (
-                b.x < 0 ||
-                b.x > canvas.width ||
-                b.y < 0 ||
-                b.y > canvas.height ||
-                (typeof b.life === "number" && b.life <= 0)
-            ) {
-                bossBullets.splice(i, 1);
-            }
-            }
-        }
-
-        function updateAsteroids() {
-            asteroids.forEach((a) => {
-            a.x += a.vx;
-            a.y += a.vy;
-
-            if (a.x < a.size || a.x > canvas.width - a.size) {
-                a.vx *= -1;
-                a.x = Math.max(a.size, Math.min(a.x, canvas.width - a.size));
-            }
-
-            if (a.y < a.size || a.y > canvas.height - a.size) {
-                a.vy *= -1;
-                a.y = Math.max(a.size, Math.min(a.y, canvas.height - a.size));
-            }
-            });
-        }
-
-        function handleBossCollision(bossObj, bossBulletsArray) {
-            const dxBoss = ship.x - bossObj.x;
-            const dyBoss = ship.y - bossObj.y;
-
-            if (
-            Math.abs(dxBoss) < bossObj.radiusX + ship.radius &&
-            Math.abs(dyBoss) < bossObj.radiusY + ship.radius
-            ) {
+        for (let i = bossBullets.length - 1; i >= 0; i--) {
+          const b = bossBullets[i];
+          const dxB = b.x - ship.x;
+          const dyB = b.y - ship.y;
+          const dist = Math.sqrt(dxB * dxB + dyB * dyB);
+          if (dist < b.radius + ship.radius) {
             if (!isInvincible()) {
-                lives--;
-                if (lives < 0) {
+              lives--;
+              bossBullets.splice(i, 1);
+              if (lives < 0) {
                 gameOver = true;
                 const retry = confirm(
-                    "Game Over! Your score: " + score + "\nTry again?"
+                  "Game Over! Your score: " + score + "\nTry again?"
                 );
                 if (retry) location.reload();
                 return;
-                } else {
+              } else {
                 resetShip();
-                }
+              }
             }
-            }
+          }
+        }
+        return false;
+      }
 
-            for (let j = bullets.length - 1; j >= 0; j--) {
+      function updateBossPositionAndShoot(bossObj, shootFunc) {
+        if (!bossObj) return;
+
+        bossObj.x += bossObj.vx;
+        bossObj.y += bossObj.vy;
+
+        bossObj.turnTimer--;
+        if (bossObj.turnTimer <= 0) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.sqrt(bossObj.vx ** 2 + bossObj.vy ** 2);
+          bossObj.vx = Math.cos(angle) * speed;
+          bossObj.vy = Math.sin(angle) * speed;
+          bossObj.turnTimer = 60 + Math.floor(Math.random() * 120);
+        }
+
+        if (
+          bossObj.x < bossObj.radiusX ||
+          bossObj.x > canvas.width - bossObj.radiusX
+        ) {
+          bossObj.vx *= -1;
+        }
+
+        if (
+          bossObj.y < bossObj.radiusY ||
+          bossObj.y > canvas.height - bossObj.radiusY
+        ) {
+          bossObj.vy *= -1;
+        }
+
+        bossObj.shootCooldown--;
+        if (bossObj.shootCooldown <= 0) {
+          shootFunc();
+          bossObj.shootCooldown = bossObj === boss ? 90 : 70;
+        }
+      }
+
+      function handleCollisions() {
+        const isFinalLevel = level === boss3Level;
+
+        function checkBossCollision(bossRef, livesReward = 0) {
+          if (bossRef && handleBossCollision(bossRef, bossBullets)) {
+            if (!isFinalLevel) lives += livesReward;
+            return null;
+          }
+          return bossRef;
+        }
+
+        boss = checkBossCollision(boss, 1);
+        boss2 = checkBossCollision(boss2, 2);
+
+        if (isFinalLevel && !boss && !boss2) {
+          showEndScreen = true;
+        }
+
+        for (let i = asteroids.length - 1; i >= 0; i--) {
+          const a = asteroids[i];
+          const dx = ship.x - a.x;
+          const dy = ship.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (!isInvincible() && dist < ship.radius + a.size) {
+            lives--;
+            if (lives < 0) {
+              gameOver = true;
+              const retry = confirm(
+                "Game Over! Your score: " + score + "\nTry again?"
+              );
+              if (retry) location.reload();
+              return;
+            } else resetShip();
+          }
+
+          for (let j = bullets.length - 1; j >= 0; j--) {
             const b = bullets[j];
-            const dxB = b.x - bossObj.x;
-            const dyB = b.y - bossObj.y;
-
-            const normX = dxB / bossObj.radiusX;
-            const normY = dyB / bossObj.radiusY;
-            if (normX * normX + normY * normY <= 1) {
-                bossObj.hp--;
-                bullets.splice(j, 1);
-
-                if (bossObj.hp <= 0) {
-                score += bossObj === boss ? 5000 : 10000;
-                if (level !== boss3Level || (!boss && !boss2)) {
-                    bossBullets.length = 0;
-                }
-                return true;
-                }
-            }
-            }
-
-            for (let i = bossBullets.length - 1; i >= 0; i--) {
-            const b = bossBullets[i];
-            const dxB = b.x - ship.x;
-            const dyB = b.y - ship.y;
-            const dist = Math.sqrt(dxB * dxB + dyB * dyB);
-            if (dist < b.radius + ship.radius) {
-                if (!isInvincible()) {
-                lives--;
-                bossBullets.splice(i, 1);
-                if (lives < 0) {
-                    gameOver = true;
-                    const retry = confirm(
-                    "Game Over! Your score: " + score + "\nTry again?"
-                    );
-                    if (retry) location.reload();
-                    return;
-                } else {
-                    resetShip();
-                }
-                }
-            }
-            }
-            return false;
-        }
-
-        function updateBossPositionAndShoot(bossObj, shootFunc) {
-            if (!bossObj) return;
-
-            bossObj.x += bossObj.vx;
-            bossObj.y += bossObj.vy;
-
-            bossObj.turnTimer--;
-            if (bossObj.turnTimer <= 0) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = Math.sqrt(bossObj.vx ** 2 + bossObj.vy ** 2);
-            bossObj.vx = Math.cos(angle) * speed;
-            bossObj.vy = Math.sin(angle) * speed;
-            bossObj.turnTimer = 60 + Math.floor(Math.random() * 120);
-            }
-
-            if (
-            bossObj.x < bossObj.radiusX ||
-            bossObj.x > canvas.width - bossObj.radiusX
-            ) {
-            bossObj.vx *= -1;
-            }
-
-            if (
-            bossObj.y < bossObj.radiusY ||
-            bossObj.y > canvas.height - bossObj.radiusY
-            ) {
-            bossObj.vy *= -1;
-            }
-
-            bossObj.shootCooldown--;
-            if (bossObj.shootCooldown <= 0) {
-            shootFunc();
-            bossObj.shootCooldown = bossObj === boss ? 90 : 70;
-            }
-        }
-
-        function handleCollisions() {
-            const isFinalLevel = level === boss3Level;
-
-            function checkBossCollision(bossRef, livesReward = 0) {
-            if (bossRef && handleBossCollision(bossRef, bossBullets)) {
-                if (!isFinalLevel) lives += livesReward;
-                return null;
-            }
-            return bossRef;
-            }
-
-            boss = checkBossCollision(boss, 1);
-            boss2 = checkBossCollision(boss2, 2);
-
-            if (isFinalLevel && !boss && !boss2) {
-            showEndScreen = true;
-            }
-
-            for (let i = asteroids.length - 1; i >= 0; i--) {
-            const a = asteroids[i];
-            const dx = ship.x - a.x;
-            const dy = ship.y - a.y;
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (!isInvincible() && dist < ship.radius + a.size) {
-                lives--;
-                if (lives < 0) {
-                gameOver = true;
-                const retry = confirm(
-                    "Game Over! Your score: " + score + "\nTry again?"
-                );
-                if (retry) location.reload();
-                return;
-                } else resetShip();
+            if (dist < a.size) {
+              score += points[a.sizeLabel];
+              bullets.splice(j, 1);
+              explosions.push({ x: b.x, y: b.y, radius: 0, max: 10 });
+              asteroids.splice(i, 1);
+              asteroids.push(...splitAsteroid(a));
+              break;
             }
+          }
+        }
+      }
 
-            for (let j = bullets.length - 1; j >= 0; j--) {
-                const b = bullets[j];
-                const dx = b.x - a.x;
-                const dy = b.y - a.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < a.size) {
-                score += points[a.sizeLabel];
-                bullets.splice(j, 1);
-                explosions.push({ x: b.x, y: b.y, radius: 0, max: 10 });
-                asteroids.splice(i, 1);
-                asteroids.push(...splitAsteroid(a));
+      function updateMinibosses() {
+        for (let i = minibosses.length - 1; i >= 0; i--) {
+          const mb = minibosses[i];
+
+          updateBossPositionAndShoot(mb, () => miniBossShoot(mb));
+
+          // Bullet collision with miniboss
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j];
+            const dx = b.x - mb.x;
+            const dy = b.y - mb.y;
+            // Ellipse collision
+            const normX = dx / mb.radiusX;
+            const normY = dy / mb.radiusY;
+            if (normX * normX + normY * normY <= 1) {
+              // Miniboss HP: 1/10th of boss type
+              mb.hp--;
+              bullets.splice(j, 1);
+              if (mb.hp <= 0) {
+                score += mb.type === 2 ? 1000 : 500;
+                explosions.push({ x: mb.x, y: mb.y, radius: 0, max: 15 });
+                minibosses.splice(i, 1);
                 break;
+              }
+            }
+          }
+
+          // Miniboss bullet collision with player
+          for (let k = bossBullets.length - 1; k >= 0; k--) {
+            const b = bossBullets[k];
+            const dx = b.x - ship.x;
+            const dy = b.y - ship.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < b.radius + ship.radius) {
+              if (!isInvincible()) {
+                lives--;
+                bossBullets.splice(k, 1);
+                if (lives < 0) {
+                  gameOver = true;
+                  const retry = confirm(
+                    "Game Over! Your score: " + score + "\nTry again?"
+                  );
+                  if (retry) location.reload();
+                  return;
+                } else {
+                  resetShip();
                 }
+              }
             }
-            }
+          }
+        }
+      }
+
+      function updateBoss() {
+        if (boss) updateBossPositionAndShoot(boss, bossShoot);
+      }
+
+      function updateBoss2() {
+        if (boss2) updateBossPositionAndShoot(boss2, boss2Shoot);
+      }
+
+      function updateExplosions() {
+        explosions.forEach((e) => {
+          e.radius += 1;
+        });
+        for (let i = explosions.length - 1; i >= 0; i--) {
+          if (explosions[i].radius > explosions[i].max) {
+            explosions.splice(i, 1);
+          }
+        }
+      }
+
+      // ==== DRAW FUNCTIONS ====
+      function drawShip() {
+        if (isInvincible() && Math.floor(Date.now() / 200) % 2 === 0) return;
+
+        ctx.save();
+        ctx.translate(ship.x, ship.y);
+        ctx.rotate(ship.angle);
+        ctx.fillStyle = "#fefefe";
+
+        if (ship.thrusting) {
+          ctx.beginPath();
+          ctx.fillStyle = "white";
+          ctx.moveTo(-4, 24);
+          ctx.lineTo(0, 32 + Math.random() * 5);
+          ctx.lineTo(4, 24);
+          ctx.closePath();
+          ctx.fill();
         }
 
-        function updateMinibosses() {
-            for (let i = minibosses.length - 1; i >= 0; i--) {
-            const mb = minibosses[i];
-            
-            updateBossPositionAndShoot(mb, () => miniBossShoot(mb));
+        ctx.beginPath();
+        ctx.fillStyle = "#fefefe";
+        ctx.moveTo(0, -28);
+        ctx.lineTo(-5, -10);
+        ctx.lineTo(5, -10);
+        ctx.closePath();
+        ctx.fill();
 
-            // Bullet collision with miniboss
-            for (let j = bullets.length - 1; j >= 0; j--) {
-                const b = bullets[j];
-                const dx = b.x - mb.x;
-                const dy = b.y - mb.y;
-                // Ellipse collision
-                const normX = dx / mb.radiusX;
-                const normY = dy / mb.radiusY;
-                if (normX * normX + normY * normY <= 1) {
-                // Miniboss HP: 1/10th of boss type
-                mb.hp--;
-                bullets.splice(j, 1);
-                if (mb.hp <= 0) {
-                    score += mb.type === 2 ? 1000 : 500;
-                    explosions.push({ x: mb.x, y: mb.y, radius: 0, max: 15 });
-                    minibosses.splice(i, 1);
-                    break;
-                }
-                }
-            }
+        ctx.beginPath();
+        ctx.rect(-5, -10, 10, 36);
+        ctx.fill();
 
-            // Miniboss bullet collision with player
-            for (let k = bossBullets.length - 1; k >= 0; k--) {
-                const b = bossBullets[k];
-                const dx = b.x - ship.x;
-                const dy = b.y - ship.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < b.radius + ship.radius) {
-                if (!isInvincible()) {
-                    lives--;
-                    bossBullets.splice(k, 1);
-                    if (lives < 0) {
-                    gameOver = true;
-                    const retry = confirm(
-                        "Game Over! Your score: " + score + "\nTry again?"
-                    );
-                    if (retry) location.reload();
-                    return;
-                    } else {
-                    resetShip();
-                    }
-                }
-                }
-            }
-            }
+        ctx.beginPath();
+        ctx.moveTo(-5, 0);
+        ctx.lineTo(-12, 18);
+        ctx.lineTo(-5, 18);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(5, 0);
+        ctx.lineTo(12, 18);
+        ctx.lineTo(5, 18);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.fillStyle = "gray";
+        ctx.rect(-5, 22, 10, 4);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawAsteroid(a) {
+        ctx.save();
+        ctx.translate(a.x, a.y);
+        ctx.fillStyle = "gray";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        a.shape.forEach((point, i) => {
+          const r = a.size * point.radiusOffset;
+          const x = Math.cos(point.angle) * r;
+          const y = Math.sin(point.angle) * r;
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawBullets() {
+        ctx.fillStyle = "lightgray";
+        bullets.forEach((b) => {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawBossBullets() {
+        ctx.fillStyle = "#444444";
+        bossBullets.forEach((b) => {
+          ctx.beginPath();
+          ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawExplosions() {
+        explosions.forEach((e) => {
+          ctx.beginPath();
+          ctx.fillStyle = "white";
+          ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawScore() {
+        ctx.fillStyle = "lightgray";
+        ctx.font = "20px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText(`Lives: ${lives}`, 20, 30);
+        ctx.textAlign = "center";
+        ctx.fillText(`Level: ${level}`, canvas.width / 2, 30);
+        ctx.textAlign = "right";
+        ctx.fillText(`Score: ${score}`, canvas.width - 20, 30);
+      }
+
+      function clear() {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      }
+
+      function drawBoss() {
+        if (!boss) return;
+
+        ctx.save();
+        ctx.translate(boss.x, boss.y);
+
+        // Draw 4 tentacles
+        for (let i = 0; i < 4; i++) {
+          const angle = (Math.PI / 2) * i;
+          const x = Math.cos(angle) * boss.radiusX;
+          const y = Math.sin(angle) * boss.radiusY;
+          ctx.beginPath();
+          ctx.ellipse(x, y, 15, 5, angle, 0, 2 * Math.PI);
+          ctx.fillStyle = "white";
+          ctx.fill();
         }
 
-        function updateBoss() {
-            if (boss) updateBossPositionAndShoot(boss, bossShoot);
+        // Draw oval body
+        ctx.beginPath();
+        ctx.ellipse(0, 0, boss.radiusX, boss.radiusY, 0, 0, 2 * Math.PI);
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fill();
+
+        // Draw oval in the middle
+        ctx.beginPath();
+        ctx.ellipse(
+          0,
+          0,
+          boss.radiusX * 0.3,
+          boss.radiusY * 0.3,
+          0,
+          0,
+          2 * Math.PI
+        );
+        ctx.fillStyle = "#000000";
+        ctx.fill();
+
+        // Ring
+        ctx.beginPath();
+        ctx.ellipse(
+          0,
+          0,
+          boss.radiusX * 0.3,
+          boss.radiusY * 0.3,
+          0,
+          0,
+          2 * Math.PI
+        );
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+
+        // Ring
+        ctx.beginPath();
+        ctx.ellipse(
+          0,
+          0,
+          boss.radiusX * 0.65,
+          boss.radiusY * 0.65,
+          0,
+          0,
+          2 * Math.PI
+        );
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+
+        // Ring
+        ctx.beginPath();
+        ctx.ellipse(
+          0,
+          0,
+          boss.radiusX * 1,
+          boss.radiusY * 1,
+          0,
+          0,
+          2 * Math.PI
+        );
+        ctx.lineWidth = 6;
+        ctx.strokeStyle = "white";
+        ctx.stroke();
+
+        ctx.restore();
+      }
+
+      function drawBoss2() {
+        if (!boss2) return;
+
+        ctx.save();
+        ctx.translate(boss2.x, boss2.y);
+
+        ctx.lineWidth = 10;
+        const bodyRadius = boss2.radiusX * 1.2;
+
+        // Draw larger body
+        ctx.beginPath();
+        ctx.arc(0, 0, bodyRadius, 0, 2 * Math.PI);
+        ctx.fillStyle = "#ccc";
+        ctx.fill();
+
+        // Draw 8 arms
+        ctx.fillStyle = "#ccc";
+        const armLength = bodyRadius + 40;
+        const armWidth = 36;
+        for (let i = 0; i < 8; i++) {
+          const angle = (Math.PI / 4) * i;
+
+          const baseLeftX = Math.cos(angle + Math.PI / 2) * (armWidth / 2);
+          const baseLeftY = Math.sin(angle + Math.PI / 2) * (armWidth / 2);
+          const baseRightX = Math.cos(angle - Math.PI / 2) * (armWidth / 2);
+          const baseRightY = Math.sin(angle - Math.PI / 2) * (armWidth / 2);
+
+          // Calculate the tip point of the triangle (end of the arm)
+          const tipX = Math.cos(angle) * armLength;
+          const tipY = Math.sin(angle) * armLength;
+
+          ctx.beginPath();
+          ctx.moveTo(baseLeftX, baseLeftY); // left base corner
+          ctx.lineTo(tipX, tipY); // tip of the arm
+          ctx.lineTo(baseRightX, baseRightY); // right base corner
+          ctx.closePath();
+          ctx.fill();
         }
 
-        function updateBoss2() {
-            if (boss2) updateBossPositionAndShoot(boss2, boss2Shoot);
-        }
+        // Draw circle in the middle
+        ctx.beginPath();
+        ctx.arc(0, 0, boss2.radiusX * 0.3, 0, 2 * Math.PI);
+        ctx.fillStyle = "#000000";
+        ctx.fill();
 
-        function updateExplosions() {
-            explosions.forEach((e) => {
-            e.radius += 1;
-            });
-            for (let i = explosions.length - 1; i >= 0; i--) {
-            if (explosions[i].radius > explosions[i].max) {
-                explosions.splice(i, 1);
-            }
-            }
-        }
+        // Gray circle
+        ctx.beginPath();
+        ctx.arc(0, 0, boss2.radiusX * 0.35, 0, 2 * Math.PI);
+        ctx.strokeStyle = "#222";
+        ctx.stroke();
 
-        // ==== DRAW FUNCTIONS ====
-        function drawShip() {
-            if (isInvincible() && Math.floor(Date.now() / 200) % 2 === 0) return;
+        ctx.restore();
+      }
 
-            ctx.save();
-            ctx.translate(ship.x, ship.y);
-            ctx.rotate(ship.angle);
-            ctx.fillStyle = "#fefefe";
-
-            if (ship.thrusting) {
-            ctx.beginPath();
-            ctx.fillStyle = "white";
-            ctx.moveTo(-4, 24);
-            ctx.lineTo(0, 32 + Math.random() * 5);
-            ctx.lineTo(4, 24);
-            ctx.closePath();
-            ctx.fill();
-            }
-
-            ctx.beginPath();
-            ctx.fillStyle = "#fefefe";
-            ctx.moveTo(0, -28);
-            ctx.lineTo(-5, -10);
-            ctx.lineTo(5, -10);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.rect(-5, -10, 10, 36);
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(-5, 0);
-            ctx.lineTo(-12, 18);
-            ctx.lineTo(-5, 18);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(5, 0);
-            ctx.lineTo(12, 18);
-            ctx.lineTo(5, 18);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.fillStyle = "gray";
-            ctx.rect(-5, 22, 10, 4);
-            ctx.fill();
-
-            ctx.restore();
-        }
-
-        function drawAsteroid(a) {
-            ctx.save();
-            ctx.translate(a.x, a.y);
-            ctx.fillStyle = "gray";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            a.shape.forEach((point, i) => {
-            const r = a.size * point.radiusOffset;
-            const x = Math.cos(point.angle) * r;
-            const y = Math.sin(point.angle) * r;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-            });
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
-        }
-
-        function drawBullets() {
-            ctx.fillStyle = "lightgray";
-            bullets.forEach((b) => {
-            ctx.beginPath();
-            ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
-            ctx.fill();
-            });
-        }
-
-        function drawBossBullets() {
-            ctx.fillStyle = "#444444";
-            bossBullets.forEach((b) => {
-            ctx.beginPath();
-            ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-            ctx.fill();
-            });
-        }
-
-        function drawExplosions() {
-            explosions.forEach((e) => {
-            ctx.beginPath();
-            ctx.fillStyle = "white";
-            ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
-            ctx.fill();
-            });
-        }
-
-        function drawScore() {
-            ctx.fillStyle = "lightgray";
-            ctx.font = "20px Arial";
-            ctx.textAlign = "left";
-            ctx.fillText(`Lives: ${lives}`, 20, 30);
-            ctx.textAlign = "center";
-            ctx.fillText(`Level: ${level}`, canvas.width / 2, 30);
-            ctx.textAlign = "right";
-            ctx.fillText(`Score: ${score}`, canvas.width - 20, 30);
-        }
-
-        function clear() {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        }
-
-        function drawBoss() {
-            if (!boss) return;
-
-            ctx.save();
-            ctx.translate(boss.x, boss.y);
-
-            // Draw 4 tentacles
-            for (let i = 0; i < 4; i++) {
-            const angle = (Math.PI / 2) * i;
-            const x = Math.cos(angle) * boss.radiusX;
-            const y = Math.sin(angle) * boss.radiusY;
-            ctx.beginPath();
-            ctx.ellipse(x, y, 15, 5, angle, 0, 2 * Math.PI);
-            ctx.fillStyle = "white";
-            ctx.fill();
-            }
-
-            // Draw oval body
-            ctx.beginPath();
-            ctx.ellipse(0, 0, boss.radiusX, boss.radiusY, 0, 0, 2 * Math.PI);
-            ctx.fillStyle = "#f5f5f5";
-            ctx.fill();
-
-            // Draw oval in the middle
-            ctx.beginPath();
-            ctx.ellipse(
-            0,
-            0,
-            boss.radiusX * 0.3,
-            boss.radiusY * 0.3,
-            0,
-            0,
-            2 * Math.PI
-            );
-            ctx.fillStyle = "#000000";
-            ctx.fill();
-
-            // Ring
-            ctx.beginPath();
-            ctx.ellipse(
-            0,
-            0,
-            boss.radiusX * 0.3,
-            boss.radiusY * 0.3,
-            0,
-            0,
-            2 * Math.PI
-            );
-            ctx.lineWidth = 6;
-            ctx.strokeStyle = "white";
-            ctx.stroke();
-
-            // Ring
-            ctx.beginPath();
-            ctx.ellipse(
-            0,
-            0,
-            boss.radiusX * 0.65,
-            boss.radiusY * 0.65,
-            0,
-            0,
-            2 * Math.PI
-            );
-            ctx.lineWidth = 6;
-            ctx.strokeStyle = "white";
-            ctx.stroke();
-
-            // Ring
-            ctx.beginPath();
-            ctx.ellipse(
-            0,
-            0,
-            boss.radiusX * 1,
-            boss.radiusY * 1,
-            0,
-            0,
-            2 * Math.PI
-            );
-            ctx.lineWidth = 6;
-            ctx.strokeStyle = "white";
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        function drawBoss2() {
-            if (!boss2) return;
-
-            ctx.save();
-            ctx.translate(boss2.x, boss2.y);
-
-            ctx.lineWidth = 10;
-            const bodyRadius = boss2.radiusX * 1.2;
-
-            // Draw larger body
+      function drawMinibosses() {
+        minibosses.forEach((mb) => {
+          ctx.save();
+          ctx.translate(mb.x, mb.y);
+          if (mb.type === 2) {
+            ctx.lineWidth = 8;
+            const bodyRadius = mb.radiusX * 1.2;
             ctx.beginPath();
             ctx.arc(0, 0, bodyRadius, 0, 2 * Math.PI);
             ctx.fillStyle = "#ccc";
             ctx.fill();
-
-            // Draw 8 arms
-            ctx.fillStyle = "#ccc";
-            const armLength = bodyRadius + 40;
-            const armWidth = 36;
+            ctx.strokeStyle = "#ccc";
+            const armLength = bodyRadius + 30;
+            const armWidth = 24;
             for (let i = 0; i < 8; i++) {
-            const angle = (Math.PI / 4) * i;
+              const angle = (Math.PI / 4) * i;
 
-            const baseLeftX = Math.cos(angle + Math.PI / 2) * (armWidth / 2);
-            const baseLeftY = Math.sin(angle + Math.PI / 2) * (armWidth / 2);
-            const baseRightX = Math.cos(angle - Math.PI / 2) * (armWidth / 2);
-            const baseRightY = Math.sin(angle - Math.PI / 2) * (armWidth / 2);
+              const baseLeftX = Math.cos(angle + Math.PI / 2) * (armWidth / 2);
+              const baseLeftY = Math.sin(angle + Math.PI / 2) * (armWidth / 2);
+              const baseRightX = Math.cos(angle - Math.PI / 2) * (armWidth / 2);
+              const baseRightY = Math.sin(angle - Math.PI / 2) * (armWidth / 2);
 
-            // Calculate the tip point of the triangle (end of the arm)
-            const tipX = Math.cos(angle) * armLength;
-            const tipY = Math.sin(angle) * armLength;
+              // Calculate the tip point of the triangle (end of the arm)
+              const tipX = Math.cos(angle) * armLength;
+              const tipY = Math.sin(angle) * armLength;
 
-            ctx.beginPath();
-            ctx.moveTo(baseLeftX, baseLeftY); // left base corner
-            ctx.lineTo(tipX, tipY);           // tip of the arm
-            ctx.lineTo(baseRightX, baseRightY); // right base corner
-            ctx.closePath();
-            ctx.fill();
+              ctx.beginPath();
+              ctx.moveTo(baseLeftX, baseLeftY); // left base corner
+              ctx.lineTo(tipX, tipY); // tip of the arm
+              ctx.lineTo(baseRightX, baseRightY); // right base corner
+              ctx.closePath();
+              ctx.fill();
             }
-
-            // Draw circle in the middle
             ctx.beginPath();
-            ctx.arc(0, 0, boss2.radiusX * 0.3, 0, 2 * Math.PI);
+            ctx.arc(0, 0, mb.radiusX * 0.3, 0, 2 * Math.PI);
             ctx.fillStyle = "#000000";
-            ctx.fill()
-
-            // Gray circle
-            ctx.beginPath();
-            ctx.arc(0, 0, boss2.radiusX * 0.35, 0, 2 * Math.PI);
-            ctx.strokeStyle = "#222";
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        function drawMinibosses() {
-            minibosses.forEach((mb) => {
-            ctx.save();
-            ctx.translate(mb.x, mb.y);
-            if (mb.type === 2) {
-                ctx.lineWidth = 8;
-                const bodyRadius = mb.radiusX * 1.2;
-                ctx.beginPath();
-                ctx.arc(0, 0, bodyRadius, 0, 2 * Math.PI);
-                ctx.fillStyle = "#ccc";
-                ctx.fill();
-                ctx.strokeStyle = "#ccc";
-                const armLength = bodyRadius + 30;
-                const armWidth = 24;
-                for (let i = 0; i < 8; i++) {
-                const angle = (Math.PI / 4) * i;
-
-                const baseLeftX = Math.cos(angle + Math.PI / 2) * (armWidth / 2);
-                const baseLeftY = Math.sin(angle + Math.PI / 2) * (armWidth / 2);
-                const baseRightX = Math.cos(angle - Math.PI / 2) * (armWidth / 2);
-                const baseRightY = Math.sin(angle - Math.PI / 2) * (armWidth / 2);
-
-                // Calculate the tip point of the triangle (end of the arm)
-                const tipX = Math.cos(angle) * armLength;
-                const tipY = Math.sin(angle) * armLength;
-
-                ctx.beginPath();
-                ctx.moveTo(baseLeftX, baseLeftY); // left base corner
-                ctx.lineTo(tipX, tipY);           // tip of the arm
-                ctx.lineTo(baseRightX, baseRightY); // right base corner
-                ctx.closePath();
-                ctx.fill();
-                }
-                ctx.beginPath();
-                ctx.arc(0, 0, mb.radiusX * 0.3, 0, 2 * Math.PI);
-                ctx.fillStyle = "#000000";
-                ctx.fill();
-            } else {
-                ctx.fillStyle = "white";
-                ctx.beginPath();
-                ctx.ellipse(0, 0, mb.radiusX, mb.radiusY, 0, 0, 2 * Math.PI);
-                ctx.fill();
-
-                for (let i = 0; i < 4; i++) {
-                const angle = (Math.PI / 2) * i;
-                const x = Math.cos(angle) * mb.radiusX;
-                const y = Math.sin(angle) * mb.radiusY;
-                ctx.beginPath();
-                ctx.ellipse(x, y, 15, 5, angle, 0, 2 * Math.PI);
-                ctx.fillStyle = "white";
-                ctx.fill();
-                }
-
-                ctx.beginPath();
-                ctx.ellipse(
-                0,
-                0,
-                mb.radiusX * 0.3,
-                mb.radiusY * 0.3,
-                0,
-                0,
-                2 * Math.PI
-                );
-                ctx.fillStyle = "#000000";
-                ctx.fill();
-                
-                // Ring
-                ctx.beginPath();
-                ctx.ellipse(
-                0,
-                0,
-                mb.radiusX * 0.6,
-                mb.radiusY * 0.6,
-                0,
-                0,
-                2 * Math.PI
-                );
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = "#777";
-                ctx.stroke();
-
-            }
-            ctx.restore();
-            });
-        }
-
-        function drawBossHP() {
-            if (!boss) return;
-            ctx.fillStyle = "lightgray";
-            ctx.font = "18px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(
-            `Boss HP: ${boss.hp}`,
-            canvas.width / 2,
-            canvas.height - 20
-            );
-        }
-
-        function drawBoss2HP() {
-            if (!boss2) return;
-            ctx.fillStyle = "lightgray";
-            ctx.font = "18px Arial";
-            ctx.textAlign = "center";
-            ctx.fillText(
-            `Boss HP: ${boss2.hp}`,
-            canvas.width / 2,
-            canvas.height - 20
-            );
-        }
-
-        function drawBoss3HP() {
-            if (!boss2 && !boss) return;
-            ctx.fillStyle = "lightgray";
-            ctx.font = "18px Arial";
-            ctx.textAlign = "center";
-            let hpText = "Bosses HP: ";
-            if (boss) hpText += boss.hp;
-            else hpText += "-";
-            hpText += " ";
-            if (boss2) hpText += boss2.hp;
-            else hpText += "-";
-            ctx.fillText(hpText, canvas.width / 2, canvas.height - 20);
-        }
-
-        function loadTrack(index) {
-            if (!music[index]) {
-            music[index] = new Audio(musicFilenames[index]);
-            music[index].onended = () => {
-                currentTrack = (currentTrack + 1) % musicFilenames.length;
-                playNextTrack();
-            };
-            }
-        }
-
-        function playNextTrack() {
-            loadTrack(currentTrack);
-
-            music.forEach((track, idx) => {
-            if (idx !== currentTrack && track) {
-                track.pause();
-                track.currentTime = 0;
-            }
-            });
-
-            const current = music[currentTrack];
-            current.currentTime = 0;
-            current.play();
-        }
-
-        // ==== MAIN LOOP ====
-        function gameLoop() {
-            if (gameOver) return;
-            clear();
-
-            if (showStartScreen) {
-            ctx.fillStyle = "#111";
-            ctx.globalAlpha = 0.6;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.globalAlpha = 1;
-            ctx.fillStyle = "lightgray";
-            ctx.font = '60px "Harlow Solid", sans-serif';
-            ctx.textAlign = "center";
-            ctx.fillText("How to play", canvas.width / 2, canvas.height / 2 - 60);
-            ctx.font = '20px "Noto Sans", sans-serif';
-            ctx.fillText(
-                "Use arrows to move and space to shoot",
-                canvas.width / 2,
-                canvas.height / 2 + 20
-            );
-            ctx.fillText(
-                "Press p to pause game",
-                canvas.width / 2,
-                canvas.height / 2 + 50
-            );
-            ctx.fillText(
-                "Press 1 for Easy Mode",
-                canvas.width / 2,
-                canvas.height / 2 + 80
-            );
-            ctx.fillText(
-                "Press 2 for Normal Mode",
-                canvas.width / 2,
-                canvas.height / 2 + 110
-            );
-            ctx.fillText(
-                "Press 3 for Hard Mode",
-                canvas.width / 2,
-                canvas.height / 2 + 140
-            );
-
-            requestAnimationFrame(gameLoop);
-            return;
-            }
-
-            if (showLevelScreen) {
-            ctx.fillStyle = "#111";
-            ctx.globalAlpha = 0.6;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "lightgray";
-            ctx.globalAlpha = 1;
-            ctx.font = '40px "Harlow Solid", sans-serif';
-            ctx.textAlign = "center";
-            ctx.fillText(
-                `Level ${level} - Are you ready?`,
-                canvas.width / 2,
-                canvas.height / 2
-            );
-            levelScreenTimer--;
-            if (levelScreenTimer <= 0) {
-                showLevelScreen = false;
-
-                let baseAsteroids = 3 + (level - 1);
-                if (difficulty === "Easy") baseAsteroids--;
-                if (difficulty === "Hard") baseAsteroids++;
-                if (baseAsteroids < 1) baseAsteroids = 1;
-                spawnAsteroids(baseAsteroids);
-                if (level >= 6 && level <= 9) {
-                for (let i = 0; i < level - 5; i++) {
-                    spawnMiniboss1();
-                }
-                }
-                if (level >= 11 && level <= 14) {
-                for (let i = 0; i < level - 10; i++) {
-                    spawnMiniboss2();
-                }
-                }
-            }
-            requestAnimationFrame(gameLoop);
-            return;
-            }
-
-            if (boss) {
-            boss.x += boss.vx;
-            boss.y += boss.vy;
-
-            if (
-                boss.x - boss.radiusX < 0 ||
-                boss.x + boss.radiusX > canvas.width
-            ) {
-                boss.vx *= -1;
-            }
-            if (
-                boss.y - boss.radiusY < 0 ||
-                boss.y + boss.radiusY > canvas.height
-            ) {
-                boss.vy *= -1;
-            }
-            }
-
-            if (boss2) {
-            boss2.x += boss2.vx;
-            boss2.y += boss2.vy;
-
-            if (
-                boss2.x - boss2.radiusX < 0 ||
-                boss2.x + boss2.radiusX > canvas.width
-            ) {
-                boss2.vx *= -1;
-            }
-            if (
-                boss2.y - boss2.radiusY < 0 ||
-                boss2.y + boss2.radiusY > canvas.height
-            ) {
-                boss2.vy *= -1;
-            }
-            }
-
-            if (showEndScreen) {
-            ctx.fillStyle = "#111";
-            ctx.globalAlpha = 0.6;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = "lightgray";
-            ctx.globalAlpha = 1;
-            ctx.font = '50px "Harlow Solid", sans-serif';
-            ctx.textAlign = "center";
-            ctx.fillText(
-                `You won motherfucker!`,
-                canvas.width / 2,
-                canvas.height / 2 - 30
-            );
-            ctx.fillText(
-                `Your score: ${score}`,
-                canvas.width / 2,
-                canvas.height / 2 + 30
-            );
-            requestAnimationFrame(gameLoop);
-            return;
-            }
-            if (paused) {
-            ctx.save();
-            ctx.globalAlpha = 0.6;
-            ctx.fillStyle = "#222";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.globalAlpha = 1.0;
+            ctx.fill();
+          } else {
             ctx.fillStyle = "white";
-            ctx.font = '60px "Harlow Solid", sans-serif';
-            ctx.textAlign = "center";
-            ctx.fillText("Paused", canvas.width / 2, canvas.height / 2);
-            ctx.font = '24px "Noto Sans", sans-serif';
-            ctx.fillText(
-                "Press 'P' to resume",
-                canvas.width / 2,
-                canvas.height / 2 + 50
+            ctx.beginPath();
+            ctx.ellipse(0, 0, mb.radiusX, mb.radiusY, 0, 0, 2 * Math.PI);
+            ctx.fill();
+
+            for (let i = 0; i < 4; i++) {
+              const angle = (Math.PI / 2) * i;
+              const x = Math.cos(angle) * mb.radiusX;
+              const y = Math.sin(angle) * mb.radiusY;
+              ctx.beginPath();
+              ctx.ellipse(x, y, 15, 5, angle, 0, 2 * Math.PI);
+              ctx.fillStyle = "white";
+              ctx.fill();
+            }
+
+            ctx.beginPath();
+            ctx.ellipse(
+              0,
+              0,
+              mb.radiusX * 0.3,
+              mb.radiusY * 0.3,
+              0,
+              0,
+              2 * Math.PI
             );
-            ctx.restore();
-            requestAnimationFrame(gameLoop);
-            return;
-            }
+            ctx.fillStyle = "#000000";
+            ctx.fill();
 
-            updateShip();
-            updateBullets();
-            updateAsteroids();
-            handleCollisions();
-            updateExplosions();
+            // Ring
+            ctx.beginPath();
+            ctx.ellipse(
+              0,
+              0,
+              mb.radiusX * 0.6,
+              mb.radiusY * 0.6,
+              0,
+              0,
+              2 * Math.PI
+            );
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = "#777";
+            ctx.stroke();
+          }
+          ctx.restore();
+        });
+      }
 
-            drawScore();
-            drawShip();
-            drawBullets();
-            drawExplosions();
-            asteroids.forEach(drawAsteroid);
-            drawBoss();
-            drawBossBullets();
-            drawBoss2();
-            drawMinibosses();
+      function drawBossHP() {
+        if (!boss) return;
+        ctx.fillStyle = "lightgray";
+        ctx.font = "18px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          `Boss HP: ${boss.hp}`,
+          canvas.width / 2,
+          canvas.height - 20
+        );
+      }
 
-            if (level === boss3Level && (boss || boss2)) {
-            drawBoss3HP();
-            } else if (boss) {
-            drawBossHP();
-            } else if (boss2) {
-            drawBoss2HP();
-            }
+      function drawBoss2HP() {
+        if (!boss2) return;
+        ctx.fillStyle = "lightgray";
+        ctx.font = "18px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText(
+          `Boss HP: ${boss2.hp}`,
+          canvas.width / 2,
+          canvas.height - 20
+        );
+      }
 
-            updateBoss();
-            updateBoss2();
-            updateMinibosses();
-            updateBossBullets();
+      function drawBoss3HP() {
+        if (!boss2 && !boss) return;
+        ctx.fillStyle = "lightgray";
+        ctx.font = "18px Arial";
+        ctx.textAlign = "center";
+        let hpText = "Bosses HP: ";
+        if (boss) hpText += boss.hp;
+        else hpText += "-";
+        hpText += " ";
+        if (boss2) hpText += boss2.hp;
+        else hpText += "-";
+        ctx.fillText(hpText, canvas.width / 2, canvas.height - 20);
+      }
 
-            if (
-            asteroids.length === 0 &&
-            minibosses.length === 0 &&
-            !boss &&
-            !boss2 &&
-            !gameOver
-            ) {
-            if (level + 1 === boss3Level) {
-                bossSpawned = false;
-                boss2Spawned = false;
-                boss3Spawned = false;
-            }
-            nextLevel();
-            }
+      function loadTrack(index) {
+        if (!music[index]) {
+          music[index] = new Audio(musicFilenames[index]);
+          music[index].onended = () => {
+            currentTrack = (currentTrack + 1) % musicFilenames.length;
+            playNextTrack();
+          };
+        }
+      }
 
-            requestAnimationFrame(gameLoop);
+      function playNextTrack() {
+        loadTrack(currentTrack);
+
+        music.forEach((track, idx) => {
+          if (idx !== currentTrack && track) {
+            track.pause();
+            track.currentTime = 0;
+          }
+        });
+
+        const current = music[currentTrack];
+        current.currentTime = 0;
+        current.play();
+      }
+
+      // ==== MAIN LOOP ====
+      function gameLoop() {
+        if (gameOver) return;
+        clear();
+
+        if (showStartScreen) {
+          ctx.fillStyle = "#111";
+          ctx.globalAlpha = 0.6;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = "lightgray";
+          ctx.font = '60px "Harlow Solid", sans-serif';
+          ctx.textAlign = "center";
+          ctx.fillText("How to play", canvas.width / 2, canvas.height / 2 - 60);
+          ctx.font = '20px "Noto Sans", sans-serif';
+          ctx.fillText(
+            "Use arrows to move and space to shoot",
+            canvas.width / 2,
+            canvas.height / 2 + 20
+          );
+          ctx.fillText(
+            "Press p to pause game",
+            canvas.width / 2,
+            canvas.height / 2 + 50
+          );
+          ctx.fillText(
+            "Press 1 for Easy Mode",
+            canvas.width / 2,
+            canvas.height / 2 + 80
+          );
+          ctx.fillText(
+            "Press 2 for Normal Mode",
+            canvas.width / 2,
+            canvas.height / 2 + 110
+          );
+          ctx.fillText(
+            "Press 3 for Hard Mode",
+            canvas.width / 2,
+            canvas.height / 2 + 140
+          );
+
+          requestAnimationFrame(gameLoop);
+          return;
         }
 
-        gameLoop();
-        </script>
-    </body>
+        if (showLevelScreen) {
+          ctx.fillStyle = "#111";
+          ctx.globalAlpha = 0.6;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "lightgray";
+          ctx.globalAlpha = 1;
+          ctx.font = '40px "Harlow Solid", sans-serif';
+          ctx.textAlign = "center";
+          ctx.fillText(
+            `Level ${level} - Are you ready?`,
+            canvas.width / 2,
+            canvas.height / 2
+          );
+          levelScreenTimer--;
+          if (levelScreenTimer <= 0) {
+            showLevelScreen = false;
+
+            let baseAsteroids = 3 + (level - 1);
+            if (difficulty === "Easy") baseAsteroids--;
+            if (difficulty === "Hard") baseAsteroids++;
+            if (baseAsteroids < 1) baseAsteroids = 1;
+            spawnAsteroids(baseAsteroids);
+            if (level >= 6 && level <= 9) {
+              for (let i = 0; i < level - 5; i++) {
+                spawnMiniboss1();
+              }
+            }
+            if (level >= 11 && level <= 14) {
+              for (let i = 0; i < level - 10; i++) {
+                spawnMiniboss2();
+              }
+            }
+          }
+          requestAnimationFrame(gameLoop);
+          return;
+        }
+
+        if (boss) {
+          boss.x += boss.vx;
+          boss.y += boss.vy;
+
+          if (
+            boss.x - boss.radiusX < 0 ||
+            boss.x + boss.radiusX > canvas.width
+          ) {
+            boss.vx *= -1;
+          }
+          if (
+            boss.y - boss.radiusY < 0 ||
+            boss.y + boss.radiusY > canvas.height
+          ) {
+            boss.vy *= -1;
+          }
+        }
+
+        if (boss2) {
+          boss2.x += boss2.vx;
+          boss2.y += boss2.vy;
+
+          if (
+            boss2.x - boss2.radiusX < 0 ||
+            boss2.x + boss2.radiusX > canvas.width
+          ) {
+            boss2.vx *= -1;
+          }
+          if (
+            boss2.y - boss2.radiusY < 0 ||
+            boss2.y + boss2.radiusY > canvas.height
+          ) {
+            boss2.vy *= -1;
+          }
+        }
+
+        if (showEndScreen) {
+          ctx.fillStyle = "#111";
+          ctx.globalAlpha = 0.6;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.fillStyle = "lightgray";
+          ctx.globalAlpha = 1;
+          ctx.font = '50px "Harlow Solid", sans-serif';
+          ctx.textAlign = "center";
+          ctx.fillText(
+            `You won motherfucker!`,
+            canvas.width / 2,
+            canvas.height / 2 - 30
+          );
+          ctx.fillText(
+            `Your score: ${score}`,
+            canvas.width / 2,
+            canvas.height / 2 + 30
+          );
+          requestAnimationFrame(gameLoop);
+          return;
+        }
+        if (paused) {
+          ctx.save();
+          ctx.globalAlpha = 0.6;
+          ctx.fillStyle = "#222";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.globalAlpha = 1.0;
+          ctx.fillStyle = "white";
+          ctx.font = '60px "Harlow Solid", sans-serif';
+          ctx.textAlign = "center";
+          ctx.fillText("Paused", canvas.width / 2, canvas.height / 2);
+          ctx.font = '24px "Noto Sans", sans-serif';
+          ctx.fillText(
+            "Press 'P' to resume",
+            canvas.width / 2,
+            canvas.height / 2 + 50
+          );
+          ctx.restore();
+          requestAnimationFrame(gameLoop);
+          return;
+        }
+
+        updateShip();
+        updateBullets();
+        updateAsteroids();
+        handleCollisions();
+        updateExplosions();
+
+        drawScore();
+        drawShip();
+        drawBullets();
+        drawExplosions();
+        asteroids.forEach(drawAsteroid);
+        drawBoss();
+        drawBossBullets();
+        drawBoss2();
+        drawMinibosses();
+
+        if (level === boss3Level && (boss || boss2)) {
+          drawBoss3HP();
+        } else if (boss) {
+          drawBossHP();
+        } else if (boss2) {
+          drawBoss2HP();
+        }
+
+        updateBoss();
+        updateBoss2();
+        updateMinibosses();
+        updateBossBullets();
+
+        if (
+          asteroids.length === 0 &&
+          minibosses.length === 0 &&
+          !boss &&
+          !boss2 &&
+          !gameOver
+        ) {
+          if (level + 1 === boss3Level) {
+            bossSpawned = false;
+            boss2Spawned = false;
+            boss3Spawned = false;
+          }
+          nextLevel();
+        }
+
+        requestAnimationFrame(gameLoop);
+      }
+
+      gameLoop();
+    </script>
+  </body>
 </html>
