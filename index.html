@@ -272,9 +272,9 @@
         if (difficulty === "Easy") {
           max = 250;
         } else if (difficulty === "Normal") {
-          max = 235;
+          max = 240;
         } else if (difficulty === "Hard") {
-          max = 220;
+          max = 230;
         }
         seismic.push({
           x: ship.x,
@@ -695,7 +695,7 @@
       function updateSeismic() {
         for (let i = seismic.length - 1; i >= 0; i--) {
           const s = seismic[i];
-          s.radius += 2;
+          s.radius += 4;
 
           for (let j = asteroids.length - 1; j >= 0; j--) {
             const a = asteroids[j];
