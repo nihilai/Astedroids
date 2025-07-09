@@ -123,7 +123,7 @@
       const bossBullets = [];
 
       const friction = 0.98;
-      const rotationSpeed = 0.05;
+      const rotationSpeed = 0.065;
       const thrustPower = 0.12;
       let thrustStopTimeout;
       const laserSound = new Audio("laser-shot-ingame-230500.mp3");
@@ -272,9 +272,9 @@
         if (difficulty === "Easy") {
           max = 250;
         } else if (difficulty === "Normal") {
-          max = 225;
+          max = 235;
         } else if (difficulty === "Hard") {
-          max = 200;
+          max = 220;
         }
         seismic.push({
           x: ship.x,
@@ -297,11 +297,11 @@
 
         let speed;
         if (difficulty === "Easy") {
-          speed = 1.5;
+          speed = 1.75;
         } else if (difficulty === "Normal") {
           speed = 2;
         } else if (difficulty === "Hard") {
-          speed = 2.5;
+          speed = 2.25;
         }
 
         bossBullets.push({
@@ -327,9 +327,9 @@
         if (difficulty === "Easy") {
           speed = 2;
         } else if (difficulty === "Normal") {
-          speed = 2.5;
+          speed = 2.25;
         } else if (difficulty === "Hard") {
-          speed = 3;
+          speed = 2.5;
         }
 
         bossBullets.push({
@@ -351,11 +351,11 @@
         let life = 200;
         let speed;
         if (difficulty === "Easy") {
-          speed = 1.5;
+          speed = 1.75;
         } else if (difficulty === "Normal") {
           speed = 2;
         } else if (difficulty === "Hard") {
-          speed = 2.5;
+          speed = 2.25;
         }
 
         bossBullets.push({
@@ -409,7 +409,7 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 150;
+          safe = dist > 400;
         }
         const angle = Math.random() * Math.PI * 2;
 
@@ -420,10 +420,10 @@
           speed = 0.5 + Math.random() * 0.5;
         } else if (difficulty === "Normal") {
           hp = 60;
-          speed = 1 + Math.random() * 1;
+          speed = 0.75 + Math.random() * 0.75;
         } else if (difficulty === "Hard") {
           hp = 80;
-          speed = 1.5 + Math.random() * 1.5;
+          speed = 1 + Math.random() * 1;
         }
 
         boss = {
@@ -450,21 +450,21 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 150;
+          safe = dist > 400;
         }
         const angle = Math.random() * Math.PI * 2;
 
         let speed;
         let hp;
         if (difficulty === "Easy") {
-          hp = 80;
-          speed = 1 + Math.random() * 1;
+          hp = 60;
+          speed = 0.75 + Math.random() * 0.75;
         } else if (difficulty === "Normal") {
-          hp = 120;
-          speed = 1.5 + Math.random() * 1.5;
+          hp = 90;
+          speed = 1 + Math.random() * 1;
         } else if (difficulty === "Hard") {
-          hp = 160;
-          speed = 2 + Math.random() * 2;
+          hp = 120;
+          speed = 1.25 + Math.random() * 1.25;
         }
 
         boss2 = {
@@ -491,7 +491,7 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 150;
+          safe = dist > 200;
         }
         const angle = Math.random() * Math.PI * 2;
 
@@ -499,13 +499,13 @@
         let hp;
         if (difficulty === "Easy") {
           hp = 8;
-          speed = 0.5 + Math.random() * 0.5;
+          speed = 0.75 + Math.random() * 0.75;
         } else if (difficulty === "Normal") {
           hp = 12;
           speed = 1 + Math.random() * 1;
         } else if (difficulty === "Hard") {
           hp = 16;
-          speed = 1.5 + Math.random() * 1.5;
+          speed = 1.25 + Math.random() * 1.25;
         }
 
         minibosses.push({
@@ -533,7 +533,7 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 150;
+          safe = dist > 200;
         }
         const angle = Math.random() * Math.PI * 2;
 
@@ -544,10 +544,10 @@
           speed = 1 + Math.random() * 1;
         } else if (difficulty === "Normal") {
           hp = 24;
-          speed = 1.5 + Math.random() * 1.5;
+          speed = 1.25 + Math.random() * 1.25;
         } else if (difficulty === "Hard") {
           hp = 32;
-          speed = 2 + Math.random() * 2;
+          speed = 1.5 + Math.random() * 1.5;
         }
 
         minibosses.push({
@@ -715,7 +715,7 @@
             const dy = boss.y - s.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < s.radius + Math.max(boss.radiusX, boss.radiusY)) {
-              boss.hp -= 15;
+              boss.hp -= 20;
               s.damagedBosses.add("boss");
               if (boss.hp <= 0) {
                 score += 5000;
@@ -730,7 +730,7 @@
             const dy = boss2.y - s.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
             if (dist < s.radius + boss2.radiusX) {
-              boss2.hp -= 30;
+              boss2.hp -= 40;
               s.damagedBosses.add("boss2");
               if (boss2.hp <= 0) {
                 score += 10000;
