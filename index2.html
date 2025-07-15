@@ -105,6 +105,7 @@
       // ==== GAME STATE ====
       const keys = {};
       let canShoot = true;
+      let canShoot2 = true;
       let difficulty = "Hard";
       let score = 0;
       let level = 0;
@@ -122,10 +123,11 @@
       const bossBullets = [];
 
       const friction = 0.98;
-      const rotationSpeed = 0.05;
+      const rotationSpeed = 0.065;
       const thrustPower = 0.12;
       let thrustStopTimeout;
       const laserSound = new Audio("laser-shot-ingame-230500.mp3");
+      const seismicSound = new Audio("boom6.mp3");
       const thrustSound = new Audio("loopingthrust-95548.mp3");
 
       const asteroidSizeMap = { large: 50, medium: 30, small: 15 };
@@ -144,6 +146,7 @@
       };
 
       const bullets = [];
+      const seismic = [];
       const explosions = [];
       const asteroids = [];
       const minibosses = [];
@@ -154,7 +157,7 @@
         if (showStartScreen) {
           if (e.key === "1") {
             difficulty = "Easy";
-            lives = 8;
+            lives = 7;
             showStartScreen = false;
             playNextTrack();
           } else if (e.key === "2") {
@@ -164,7 +167,7 @@
             playNextTrack();
           } else if (e.key === "3") {
             difficulty = "Hard";
-            lives = 4;
+            lives = 5;
             showStartScreen = false;
             playNextTrack();
           }
@@ -174,6 +177,10 @@
         if (e.key === " " && canShoot) {
           shootBullet();
           canShoot = false;
+        }
+        if (e.key === "Control" && canShoot2) {
+          shootSeismic();
+          canShoot2 = false;
         }
         if (e.key === "p") {
           paused = !paused;
@@ -258,6 +265,27 @@
         }
       }
 
+      function shootSeismic() {
+        const shot2 = seismicSound.cloneNode();
+        shot2.play();
+        let max;
+        if (difficulty === "Easy") {
+          max = 250;
+        } else if (difficulty === "Normal") {
+          max = 240;
+        } else if (difficulty === "Hard") {
+          max = 230;
+        }
+        seismic.push({
+          x: ship.x,
+          y: ship.y,
+          radius: 0,
+          max,
+          damagedBosses: new Set(),
+          damagedMinibosses: new Set(),
+        });
+      }
+
       function bossShoot() {
         if (!boss) return;
 
@@ -269,11 +297,11 @@
 
         let speed;
         if (difficulty === "Easy") {
-          speed = 1.5;
+          speed = 1.75;
         } else if (difficulty === "Normal") {
           speed = 2;
         } else if (difficulty === "Hard") {
-          speed = 2.5;
+          speed = 2.25;
         }
 
         bossBullets.push({
@@ -299,9 +327,9 @@
         if (difficulty === "Easy") {
           speed = 2;
         } else if (difficulty === "Normal") {
-          speed = 2.5;
+          speed = 2.25;
         } else if (difficulty === "Hard") {
-          speed = 3;
+          speed = 2.5;
         }
 
         bossBullets.push({
@@ -320,14 +348,17 @@
         let angle = Math.atan2(dy, dx);
         angle += Math.random() * 0.2 - 0.1;
 
-        let life = 250;
+        let life;
         let speed;
         if (difficulty === "Easy") {
-          speed = 1.5;
+          speed = 1.75;
+          life = 175;
         } else if (difficulty === "Normal") {
           speed = 2;
+          life = 200;
         } else if (difficulty === "Hard") {
-          speed = 2.5;
+          speed = 2.25;
+          life = 225;
         }
 
         bossBullets.push({
@@ -342,7 +373,7 @@
       }
 
       function isInvincible() {
-        return Date.now() - spawnTime < 2000;
+        return Date.now() - spawnTime < 3000;
       }
 
       function spawnAsteroids(count) {
@@ -356,7 +387,7 @@
             const dx = x - ship.x;
             const dy = y - ship.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
-            safe = dist > 100;
+            safe = dist > 150;
           }
           const sizeLabel = "large";
           asteroids.push({
@@ -381,7 +412,7 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 100;
+          safe = dist > 400;
         }
         const angle = Math.random() * Math.PI * 2;
 
@@ -392,10 +423,10 @@
           speed = 0.5 + Math.random() * 0.5;
         } else if (difficulty === "Normal") {
           hp = 60;
-          speed = 1 + Math.random() * 1;
+          speed = 0.75 + Math.random() * 0.75;
         } else if (difficulty === "Hard") {
           hp = 80;
-          speed = 1.5 + Math.random() * 1.5;
+          speed = 1 + Math.random() * 1;
         }
 
         boss = {
@@ -422,21 +453,21 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 100;
+          safe = dist > 400;
         }
         const angle = Math.random() * Math.PI * 2;
 
         let speed;
         let hp;
         if (difficulty === "Easy") {
-          hp = 80;
-          speed = 1 + Math.random() * 1;
+          hp = 60;
+          speed = 0.75 + Math.random() * 0.75;
         } else if (difficulty === "Normal") {
-          hp = 120;
-          speed = 1.5 + Math.random() * 1.5;
+          hp = 90;
+          speed = 1 + Math.random() * 1;
         } else if (difficulty === "Hard") {
-          hp = 160;
-          speed = 2 + Math.random() * 2;
+          hp = 120;
+          speed = 1.25 + Math.random() * 1.25;
         }
 
         boss2 = {
@@ -463,7 +494,7 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 100;
+          safe = dist > 200;
         }
         const angle = Math.random() * Math.PI * 2;
 
@@ -471,13 +502,13 @@
         let hp;
         if (difficulty === "Easy") {
           hp = 8;
-          speed = 0.5 + Math.random() * 0.5;
+          speed = 0.75 + Math.random() * 0.75;
         } else if (difficulty === "Normal") {
           hp = 12;
           speed = 1 + Math.random() * 1;
         } else if (difficulty === "Hard") {
           hp = 16;
-          speed = 1.5 + Math.random() * 1.5;
+          speed = 1.25 + Math.random() * 1.25;
         }
 
         minibosses.push({
@@ -505,7 +536,7 @@
           const dx = x - ship.x;
           const dy = y - ship.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-          safe = dist > 100;
+          safe = dist > 200;
         }
         const angle = Math.random() * Math.PI * 2;
 
@@ -516,10 +547,10 @@
           speed = 1 + Math.random() * 1;
         } else if (difficulty === "Normal") {
           hp = 24;
-          speed = 1.5 + Math.random() * 1.5;
+          speed = 1.25 + Math.random() * 1.25;
         } else if (difficulty === "Hard") {
           hp = 32;
-          speed = 2 + Math.random() * 2;
+          speed = 1.5 + Math.random() * 1.5;
         }
 
         minibosses.push({
@@ -542,10 +573,14 @@
       let boss3Spawned = false;
 
       function nextLevel() {
+        seismic.length = 0;
+        bullets.length = 0;
+        bossBullets.length = 0;
         if (level !== 15) {
           level++;
           showLevelScreen = true;
           levelScreenTimer = 120;
+          canShoot2 = true;
         }
 
         if (level === 5) {
@@ -660,12 +695,95 @@
         }
       }
 
+      function updateSeismic() {
+        for (let i = seismic.length - 1; i >= 0; i--) {
+          const s = seismic[i];
+          s.radius += 4;
+
+          for (let j = asteroids.length - 1; j >= 0; j--) {
+            const a = asteroids[j];
+            const dx = a.x - s.x;
+            const dy = a.y - s.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < s.radius + a.size) {
+              score += points[a.sizeLabel];
+              asteroids.splice(j, 1);
+              asteroids.push(...splitAsteroid(a));
+              explosions.push({ x: a.x, y: a.y, radius: 0, max: 10 });
+            }
+          }
+
+          if (boss && !s.damagedBosses.has("boss")) {
+            const dx = boss.x - s.x;
+            const dy = boss.y - s.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < s.radius + Math.max(boss.radiusX, boss.radiusY)) {
+              boss.hp -= 20;
+              s.damagedBosses.add("boss");
+              if (boss.hp <= 0) {
+                score += 5000;
+                boss = null;
+                explosions.push({ x: a.x, y: a.y, radius: 0, max: 30 });
+              }
+            }
+          }
+
+          if (boss2 && !s.damagedBosses.has("boss2")) {
+            const dx = boss2.x - s.x;
+            const dy = boss2.y - s.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < s.radius + boss2.radiusX) {
+              boss2.hp -= 40;
+              s.damagedBosses.add("boss2");
+              if (boss2.hp <= 0) {
+                score += 10000;
+                boss2 = null;
+                explosions.push({ x: a.x, y: a.y, radius: 0, max: 30 });
+              }
+            }
+          }
+
+          for (let j = minibosses.length - 1; j >= 0; j--) {
+            const mb = minibosses[j];
+            const dx = mb.x - s.x;
+            const dy = mb.y - s.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (
+              dist < s.radius + Math.max(mb.radiusX, mb.radiusY) &&
+              !s.damagedMinibosses.has("mb")
+            ) {
+              mb.hp -= mb.type === 2 ? 16 : 8;
+              s.damagedMinibosses.add("mb");
+              if (mb.hp <= 0) {
+                score += mb.type === 2 ? 1000 : 500;
+                explosions.push({ x: mb.x, y: mb.y, radius: 0, max: 15 });
+                minibosses.splice(j, 1);
+              }
+            }
+          }
+
+          if (s.radius > s.max) {
+            seismic.splice(i, 1);
+          }
+        }
+      }
+
       function updateBossBullets() {
         for (let i = bossBullets.length - 1; i >= 0; i--) {
           const b = bossBullets[i];
           b.x += b.vx;
           b.y += b.vy;
           if (typeof b.life === "number") b.life--;
+
+          for (let s of seismic) {
+            const dx = b.x - s.x;
+            const dy = b.y - s.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < s.radius) {
+              bossBullets.splice(i, 1);
+              break;
+            }
+          }
 
           if (
             b.x < 0 ||
@@ -694,6 +812,59 @@
             a.y = Math.max(a.size, Math.min(a.y, canvas.height - a.size));
           }
         });
+      }
+
+      function handleCollisions() {
+        const isFinalLevel = level === boss3Level;
+
+        function checkBossCollision(bossRef, livesReward = 0) {
+          if (bossRef && handleBossCollision(bossRef, bossBullets)) {
+            if (!isFinalLevel) lives += livesReward;
+            return null;
+          }
+          return bossRef;
+        }
+
+        boss = checkBossCollision(boss, 1);
+        boss2 = checkBossCollision(boss2, 2);
+
+        if (isFinalLevel && !boss && !boss2) {
+          showEndScreen = true;
+        }
+
+        for (let i = asteroids.length - 1; i >= 0; i--) {
+          const a = asteroids[i];
+          const dx = ship.x - a.x;
+          const dy = ship.y - a.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (!isInvincible() && dist < ship.radius + a.size) {
+            lives--;
+            if (lives < 0) {
+              gameOver = true;
+              const retry = confirm(
+                "Game Over! Your score: " + score + "\nTry again?"
+              );
+              if (retry) location.reload();
+              return;
+            } else resetShip();
+          }
+
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            const b = bullets[j];
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < a.size) {
+              score += points[a.sizeLabel];
+              bullets.splice(j, 1);
+              explosions.push({ x: b.x, y: b.y, radius: 0, max: 10 });
+              asteroids.splice(i, 1);
+              asteroids.push(...splitAsteroid(a));
+              break;
+            }
+          }
+        }
       }
 
       function handleBossCollision(bossObj, bossBulletsArray) {
@@ -732,6 +903,12 @@
 
             if (bossObj.hp <= 0) {
               score += bossObj === boss ? 5000 : 10000;
+              explosions.push({
+                x: bossObj.x,
+                y: bossObj.y,
+                radius: 0,
+                max: 30,
+              });
               if (level !== boss3Level || (!boss && !boss2)) {
                 bossBullets.length = 0;
               }
@@ -801,59 +978,6 @@
         }
       }
 
-      function handleCollisions() {
-        const isFinalLevel = level === boss3Level;
-
-        function checkBossCollision(bossRef, livesReward = 0) {
-          if (bossRef && handleBossCollision(bossRef, bossBullets)) {
-            if (!isFinalLevel) lives += livesReward;
-            return null;
-          }
-          return bossRef;
-        }
-
-        boss = checkBossCollision(boss, 1);
-        boss2 = checkBossCollision(boss2, 2);
-
-        if (isFinalLevel && !boss && !boss2) {
-          showEndScreen = true;
-        }
-
-        for (let i = asteroids.length - 1; i >= 0; i--) {
-          const a = asteroids[i];
-          const dx = ship.x - a.x;
-          const dy = ship.y - a.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-
-          if (!isInvincible() && dist < ship.radius + a.size) {
-            lives--;
-            if (lives < 0) {
-              gameOver = true;
-              const retry = confirm(
-                "Game Over! Your score: " + score + "\nTry again?"
-              );
-              if (retry) location.reload();
-              return;
-            } else resetShip();
-          }
-
-          for (let j = bullets.length - 1; j >= 0; j--) {
-            const b = bullets[j];
-            const dx = b.x - a.x;
-            const dy = b.y - a.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < a.size) {
-              score += points[a.sizeLabel];
-              bullets.splice(j, 1);
-              explosions.push({ x: b.x, y: b.y, radius: 0, max: 10 });
-              asteroids.splice(i, 1);
-              asteroids.push(...splitAsteroid(a));
-              break;
-            }
-          }
-        }
-      }
-
       function updateMinibosses() {
         for (let i = minibosses.length - 1; i >= 0; i--) {
           const mb = minibosses[i];
@@ -917,7 +1041,7 @@
 
       function updateExplosions() {
         explosions.forEach((e) => {
-          e.radius += 1;
+          e.radius += 1.5;
         });
         for (let i = explosions.length - 1; i >= 0; i--) {
           if (explosions[i].radius > explosions[i].max) {
@@ -983,7 +1107,6 @@
         ctx.save();
         ctx.translate(a.x, a.y);
         ctx.fillStyle = "gray";
-        ctx.lineWidth = 2;
         ctx.beginPath();
         a.shape.forEach((point, i) => {
           const r = a.size * point.radiusOffset;
@@ -1002,6 +1125,18 @@
         bullets.forEach((b) => {
           ctx.beginPath();
           ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      function drawSeismic() {
+        seismic.forEach((e) => {
+          ctx.beginPath();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "lightgray";
+          ctx.fillStyle = "rgba(255, 255, 255, 0.3)";
+          ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+          ctx.stroke();
           ctx.fill();
         });
       }
@@ -1026,11 +1161,18 @@
 
       function drawScore() {
         ctx.fillStyle = "lightgray";
-        ctx.font = "20px Arial";
+        ctx.font = '20px "Noto Sans", sans-serif';
         ctx.textAlign = "left";
-        ctx.fillText(`Lives: ${lives}`, 20, 30);
+        ctx.fillText(`Level: ${level}`, 20, 30);
         ctx.textAlign = "center";
-        ctx.fillText(`Level: ${level}`, canvas.width / 2, 30);
+        ctx.fillText(`Lives: ${lives}`, canvas.width / 2 - 60, 30);
+        if (canShoot2) {
+          ctx.textAlign = "center";
+          ctx.fillText(`Seismic active`, canvas.width / 2 + 60, 30);
+        } else if (!canShoot2) {
+          ctx.textAlign = "center";
+          ctx.fillText(`Seismic inactive`, canvas.width / 2 + 60, 30);
+        }
         ctx.textAlign = "right";
         ctx.fillText(`Score: ${score}`, canvas.width - 20, 30);
       }
@@ -1266,7 +1408,7 @@
       function drawBossHP() {
         if (!boss) return;
         ctx.fillStyle = "lightgray";
-        ctx.font = "18px Arial";
+        ctx.font = "18px 'Noto Sans', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(
           `Boss HP: ${boss.hp}`,
@@ -1278,7 +1420,7 @@
       function drawBoss2HP() {
         if (!boss2) return;
         ctx.fillStyle = "lightgray";
-        ctx.font = "18px Arial";
+        ctx.font = "18px 'Noto Sans', sans-serif";
         ctx.textAlign = "center";
         ctx.fillText(
           `Boss HP: ${boss2.hp}`,
@@ -1290,7 +1432,7 @@
       function drawBoss3HP() {
         if (!boss2 && !boss) return;
         ctx.fillStyle = "lightgray";
-        ctx.font = "18px Arial";
+        ctx.font = "18px 'Noto Sans', sans-serif";
         ctx.textAlign = "center";
         let hpText = "Bosses HP: ";
         if (boss) hpText += boss.hp;
@@ -1339,32 +1481,37 @@
           ctx.fillStyle = "lightgray";
           ctx.font = '60px "Harlow Solid", sans-serif';
           ctx.textAlign = "center";
-          ctx.fillText("How to play", canvas.width / 2, canvas.height / 2 - 60);
+          ctx.fillText("How to play", canvas.width / 2, canvas.height / 2 - 80);
           ctx.font = '20px "Noto Sans", sans-serif';
           ctx.fillText(
-            "Use arrows to move and space to shoot",
+            "Use \u2190 \u2191 \u2192 to move",
             canvas.width / 2,
-            canvas.height / 2 + 20
+            canvas.height / 2
+          );
+          ctx.fillText(
+            "Use space to shoot and ctrl for seismic shot",
+            canvas.width / 2,
+            canvas.height / 2 + 30
           );
           ctx.fillText(
             "Press p to pause game",
             canvas.width / 2,
-            canvas.height / 2 + 50
+            canvas.height / 2 + 60
           );
           ctx.fillText(
             "Press 1 for Easy Mode",
             canvas.width / 2,
-            canvas.height / 2 + 80
+            canvas.height / 2 + 90
           );
           ctx.fillText(
             "Press 2 for Normal Mode",
             canvas.width / 2,
-            canvas.height / 2 + 110
+            canvas.height / 2 + 120
           );
           ctx.fillText(
             "Press 3 for Hard Mode",
             canvas.width / 2,
-            canvas.height / 2 + 140
+            canvas.height / 2 + 150
           );
 
           requestAnimationFrame(gameLoop);
@@ -1394,13 +1541,19 @@
             if (baseAsteroids < 1) baseAsteroids = 1;
             spawnAsteroids(baseAsteroids);
             if (level >= 6 && level <= 9) {
-              for (let i = 0; i < level - 5; i++) {
-                spawnMiniboss1();
+              if (difficulty === "Easy") spawnMiniboss1();
+              else {
+                for (let i = 0; i < level - 5; i++) {
+                  spawnMiniboss1();
+                }
               }
             }
             if (level >= 11 && level <= 14) {
-              for (let i = 0; i < level - 10; i++) {
-                spawnMiniboss2();
+              if (difficulty === "Easy") spawnMiniboss2();
+              else {
+                for (let i = 0; i < level - 10; i++) {
+                  spawnMiniboss2();
+                }
               }
             }
           }
@@ -1488,6 +1641,7 @@
 
         updateShip();
         updateBullets();
+        updateSeismic();
         updateAsteroids();
         handleCollisions();
         updateExplosions();
@@ -1495,6 +1649,7 @@
         drawScore();
         drawShip();
         drawBullets();
+        drawSeismic();
         drawExplosions();
         asteroids.forEach(drawAsteroid);
         drawBoss();

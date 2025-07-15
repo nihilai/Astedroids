@@ -348,14 +348,17 @@
         let angle = Math.atan2(dy, dx);
         angle += Math.random() * 0.2 - 0.1;
 
-        let life = 200;
+        let life;
         let speed;
         if (difficulty === "Easy") {
           speed = 1.75;
+          life = 175;
         } else if (difficulty === "Normal") {
           speed = 2;
+          life = 200;
         } else if (difficulty === "Hard") {
           speed = 2.25;
+          life = 225;
         }
 
         bossBullets.push({
@@ -749,7 +752,7 @@
               dist < s.radius + Math.max(mb.radiusX, mb.radiusY) &&
               !s.damagedMinibosses.has("mb")
             ) {
-              mb.hp -= mb.type === 2 ? 8 : 4;
+              mb.hp -= mb.type === 2 ? 16 : 8;
               s.damagedMinibosses.add("mb");
               if (mb.hp <= 0) {
                 score += mb.type === 2 ? 1000 : 500;
@@ -822,8 +825,8 @@
           return bossRef;
         }
 
-        boss = checkBossCollision(boss, 1);
-        boss2 = checkBossCollision(boss2, 2);
+        boss = checkBossCollision(boss, 2);
+        boss2 = checkBossCollision(boss2, 3);
 
         if (isFinalLevel && !boss && !boss2) {
           showEndScreen = true;
