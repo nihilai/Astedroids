@@ -108,7 +108,7 @@
       let canShoot2 = true;
       let difficulty = "Hard";
       let score = 0;
-      let level = 0;
+      let level = 14;
       let bossLevel = 5;
       let boss2Level = 10;
       let boss3Level = 15;
@@ -204,6 +204,14 @@
               thrustSound.currentTime = 0;
               ship.thrusting = false;
             }, 200);
+          }
+        }
+      });
+
+      window.addEventListener("keydown", (e) => {
+        if (showEndScreen) {
+          if (e.key === "r") {
+            showStartScreen = true;
           }
         }
       });
@@ -825,8 +833,8 @@
           return bossRef;
         }
 
-        boss = checkBossCollision(boss, 2);
-        boss2 = checkBossCollision(boss2, 3);
+        boss = checkBossCollision(boss, 1);
+        boss2 = checkBossCollision(boss2, 2);
 
         if (isFinalLevel && !boss && !boss2) {
           showEndScreen = true;
@@ -1675,8 +1683,12 @@
           minibosses.length === 0 &&
           !boss &&
           !boss2 &&
-          !gameOver
+          !gameOver && 
+          !showEndScreen
         ) {
+          if (level === boss3Level) {
+            showEndScreen = true;
+          } else {
           if (level + 1 === boss3Level) {
             bossSpawned = false;
             boss2Spawned = false;
@@ -1684,6 +1696,7 @@
           }
           nextLevel();
         }
+      }
 
         requestAnimationFrame(gameLoop);
       }
